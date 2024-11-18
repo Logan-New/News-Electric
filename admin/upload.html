@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Upload</title>
+  <!-- Link to Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Link to custom CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Admin Panel - New's Electric LLC</h1>
+  </header>
+  <main>
+    <section>
+      <h2>Upload New Service</h2>
+      <form id="upload-form">
+        <!-- Service Name -->
+        <label for="name">Service Name:</label>
+        <input type="text" id="name" name="name" placeholder="Enter service name" required>
+        <br><br>
+
+        <!-- Service Description -->
+        <label for="description">Service Description:</label>
+        <textarea id="description" name="description" placeholder="Enter service description" required></textarea>
+        <br><br>
+
+        <!-- Image URL -->
+        <label for="image">Image URL:</label>
+        <input type="url" id="image" name="image" placeholder="Enter image URL" required>
+        <br><br>
+
+        <!-- Submit Button -->
+        <button type="submit">Submit</button>
+      </form>
+    </section>
+  </main>
+  <footer>
+    <a href="/">Return to Homepage</a>
+  </footer>
+  <!-- Add custom JS -->
+  <script>
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Gather form data
+      const name = document.getElementById('name').value;
+      const description = document.getElementById('description').value;
+      const image = document.getElementById('image').value;
+
+      try {
+        // Send data to the server
+        const response = await fetch('/admin/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name, description, image }),
+        });
+
+        // Parse server response
+        const result = await response.json();
+
+        if (response.ok) {
+          alert(result.message || 'Service added successfully!');
+          // Clear the form
+          document.getElementById('upload-form').reset();
+        } else {
+          alert(result.error || 'Failed to add service.');
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        alert('An error occurred while adding the service.');
+      }
+    });
+  </script>
+</body>
+</html>
