@@ -1,15 +1,16 @@
 {
-    "services": [
-      {
-        "name": "Residential Wiring",
-        "description": "High-quality wiring for your home.",
-        "image": "/images/residential-wiring.jpg"
-      },
-      {
-        "name": "new construction",
-        "description": "Reliable electrical installations for your home or business.",
-        "image": "/images/new-construction.jpg"
-      }
-    ]
-  }
-  
+  "services": [
+    {
+      "id": "1731976992920",
+      "name": "RiffRealm",
+      "description": "wererewr",
+      "image": ""
+    },
+    {
+      "id": "1731977274315",
+      "name": "New service 1",
+      "description": "weweewe",
+      "image": ""
+    }
+  ]
+}
