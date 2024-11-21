@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Manage Services</title>
+  <title>Admin Panel - Manage Services</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -11,29 +11,32 @@
     <h1>Admin Panel - New's Electric LLC</h1>
   </header>
   <main>
-    <section>
-      <h2>Add or Update a Service</h2>
-      <form id="manage-service-form">
-        <label for="service-id">Select Service to Update (or leave blank to add a new service):</label>
-        <select id="service-id">
-          <option value="">Add New Service</option>
-        </select>
-
-        <label for="name">Service Name:</label>
-        <input type="text" id="name" name="name" placeholder="Enter service name" required>
-
-        <label for="description">Service Description:</label>
-        <textarea id="description" name="description" placeholder="Enter service description" required></textarea>
-
-        <label for="image">Image URL (optional):</label>
-        <input type="url" id="image" name="image" placeholder="Enter image URL (optional)">
-
-        <button type="submit">Submit</button>
-      </form>
+    <section id="feedback" class="hidden">
+      <p id="feedback-message"></p>
     </section>
+    <form id="manage-service-form">
+      <label for="service-id">Select Service to Update (or leave blank to add a new service):</label>
+      <select id="service-id">
+        <option value="">Add New Service</option>
+      </select>
+    
+      <label for="name">Service Name:</label>
+      <input type="text" id="name" name="name" required>
+    
+      <label for="description">Description:</label>
+      <textarea id="description" name="description" required></textarea>
+    
+      <label for="image">Select Image:</label>
+      <input type="file" id="image" name="image" accept="image/*">
+      <div id="image-preview" class="image-preview"></div>
+    
+      <button type="submit">Save Service</button>
+    </form>
+    <button id="delete-service" class="return-button">Delete Selected Service</button>
+    <button id="return-home" class="return-button">Return to Homepage</button>    
   </main>
   <footer>
-    <a href="/">Return to Homepage</a>
+    <p>&copy; 2024 New's Electric LLC</p>
   </footer>
   <script src="/js/script.js"></script>
 </body>

@@ -100,3 +100,24 @@ app.put('/admin/update-service/:id', (req, res) => {
 
 // Start the server
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// Delete an existing service
+app.delete('/admin/delete-service/:id', (req, res) => {
+  const { id } = req.params;
+  const servicesPath = path.join(__dirname, 'data/services.json');
+
+  if (!fs.existsSync(servicesPath)) {
+    return res.status(404).json({ error: 'Services data not found.' });
+  }
+
+  const servicesData = JSON.parse(fs.readFileSync(servicesPath, 'utf-8'));
+  const serviceIndex = servicesData.services.findIndex((s) => s.id === id);
+
+  if (serviceIndex === -1) {
+    return res.status(404).json({ error: 'Service not found.' });
+  }
+
+  servicesData.services.splice(serviceIndex, 1);
+  fs.writeFileSync(servicesPath, JSON.stringify(servicesData, null, 2));
+
+  res.json({ success: true, message: 'Service deleted successfully!' });
+});
