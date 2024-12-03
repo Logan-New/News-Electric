@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   let imagesToDelete = [];  // To keep track of images to delete before saving
   let galleryImages = []; // To keep track of images for the gallery display
 
-  const BACKEND_URL = 'https://your-backend-app.onrender.com'; // Replace with your actual Render app URL
+  // **Replace with your Render app URL**
+  const BACKEND_URL = 'https://news-electric.onrender.com'; // Update with your Render app URL
 
   // Show feedback messages
   const showFeedback = (message, isSuccess = true) => {
