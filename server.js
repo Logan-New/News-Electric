@@ -12,13 +12,19 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'All4Jesus';
 
 // Constants for directory paths
 const DATA_DIR = path.join(__dirname, 'data');
-const PUBLIC_DIR = path.join(__dirname, 'public');
-const IMAGES_DIR = path.join(PUBLIC_DIR, 'images');
+const IMAGES_DIR = path.join(__dirname, 'images'); // Static images folder moved to the root now
+const CSS_DIR = path.join(__dirname, 'css');  // CSS folder is in the root directory
+const JS_DIR = path.join(__dirname, 'js');    // JS folder is in the root directory
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(PUBLIC_DIR)); // Serve static files from the 'public' directory
+
+// Serve static files correctly from the root directory
+app.use('/css', express.static(CSS_DIR)); // Serve CSS from the root directory
+app.use('/js', express.static(JS_DIR));   // Serve JS from the root directory
+app.use('/images', express.static(IMAGES_DIR)); // Serve images from the root directory
+
 app.use(helmet()); // Add secure HTTP headers
 
 // Set up multer for file uploads
@@ -33,7 +39,7 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const timestamp = Date.now();
-    const cleanFilename = file.originalname.replace(/\s+/g, '_');
+    const cleanFilename = file.originalname.replace(/\s+/g, '_'); // Remove spaces
     cb(null, `${timestamp}-${cleanFilename}`);
   },
 });
@@ -187,7 +193,7 @@ app.post('/api/admin/delete-image/:serviceId', async (req, res) => {
     service.images = service.images.filter((image) => image !== imageUrl);
 
     // Delete the image from the file system
-    const imagePath = path.join(PUBLIC_DIR, imageUrl.replace('/images/', ''));
+    const imagePath = path.join(IMAGES_DIR, imageUrl.replace('/images/', ''));
     
     if (!fs.existsSync(imagePath)) {
       return res.status(404).json({ error: 'Image not found on the server.' });
