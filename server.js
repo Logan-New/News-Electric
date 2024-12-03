@@ -85,8 +85,8 @@ app.post(
   '/api/admin/add-service',
   upload.array('images', 40), // Allow up to 40 images
   [
-    body('name').notEmpty().withMessage('Name is required'),
-    body('description').notEmpty().withMessage('Description is required'),
+    body('name').isLength({ min: 3 }).withMessage('Name must be at least 3 characters long'),
+    body('description').isLength({ min: 10 }).withMessage('Description must be at least 10 characters long'),
     body('cover-photo').optional().notEmpty().withMessage('Cover photo is required if selected'),
   ],
   async (req, res) => {
@@ -188,6 +188,11 @@ app.post('/api/admin/delete-image/:serviceId', async (req, res) => {
 
     // Delete the image from the file system
     const imagePath = path.join(PUBLIC_DIR, imageUrl.replace('/images/', ''));
+    
+    if (!fs.existsSync(imagePath)) {
+      return res.status(404).json({ error: 'Image not found on the server.' });
+    }
+
     await fs.unlink(imagePath); // Remove the image from the filesystem
 
     // Save the updated services data
