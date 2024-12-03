@@ -5,7 +5,7 @@
       "name": "Whole Home Generator Install",
       "description": "Your trusted local electrical service provider, specializing in whole-home generator installations. We ensure your home stays powered during outages with reliable, professional service tailored to meet your needs. Serving our small-town community with pride, we deliver quality workmanship and peace of mind you can count on.",
       "images": [
-        "/images/1733023430758-generator_install.jpg"
+        "/images/1733026370453-generator_install.jpg"
       ]
     },
     {
@@ -15,6 +15,15 @@
       "images": [
         "/images/1733024926675-newconstructuion.jpg"
       ]
+    },
+    {
+      "id": "1733087355036",
+      "name": "remodel",
+      "description": "remodeling\r\n",
+      "images": [
+        "/images/1733087355031-electrical_panel_service.jpg"
+      ],
+      "coverPhoto": "/images/1733087355031-electrical_panel_service.jpg"
     }
   ]
 }
