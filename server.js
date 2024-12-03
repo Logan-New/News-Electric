@@ -1,8 +1,9 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs').promises; // Use promises for non-blocking file operations
+const fs = require('fs').promises;
 const multer = require('multer');
-const helmet = require('helmet'); // Security middleware
+const helmet = require('helmet');
+const cors = require('cors'); // Import CORS for enabling cross-origin requests
 const { body, validationResult } = require('express-validator');
 require('dotenv').config();
 
@@ -12,13 +13,22 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'All4Jesus';
 
 // Constants for directory paths
 const DATA_DIR = path.join(__dirname, 'data');
-const IMAGES_DIR = path.join(__dirname, 'images'); // Static images folder moved to the root now
-const CSS_DIR = path.join(__dirname, 'css');  // CSS folder is in the root directory
-const JS_DIR = path.join(__dirname, 'js');    // JS folder is in the root directory
+const IMAGES_DIR = path.join(__dirname, 'images'); // Static images folder in root
+const CSS_DIR = path.join(__dirname, 'css');  // CSS folder in root
+const JS_DIR = path.join(__dirname, 'js');    // JS folder in root
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Enable CORS for front-end to back-end communication (GitHub Pages to Render API)
+const allowedOrigins = ['https://logan-new.github.io']; // Replace with your actual GitHub Pages URL
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  })
+);
 
 // Serve static files correctly from the root directory
 app.use('/css', express.static(CSS_DIR)); // Serve CSS from the root directory
@@ -194,11 +204,6 @@ app.post('/api/admin/delete-image/:serviceId', async (req, res) => {
 
     // Delete the image from the file system
     const imagePath = path.join(IMAGES_DIR, imageUrl.replace('/images/', ''));
-    
-    if (!fs.existsSync(imagePath)) {
-      return res.status(404).json({ error: 'Image not found on the server.' });
-    }
-
     await fs.unlink(imagePath); // Remove the image from the filesystem
 
     // Save the updated services data
