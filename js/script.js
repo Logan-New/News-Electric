@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   let imagesToDelete = [];  // To keep track of images to delete before saving
   let galleryImages = []; // To keep track of images for the gallery display
 
-  // **Replace with your Render app URL**
-  const BACKEND_URL = 'https://news-electric.onrender.com'; // Update with your Render app URL
+  // Backend URL pointing to your Render app
+  const BACKEND_URL = 'https://news-electric.onrender.com'; // Ensure this is the correct backend URL for your deployed app
 
   // Show feedback messages
   const showFeedback = (message, isSuccess = true) => {
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Fetch data from API
   const fetchData = async (url, options = {}) => {
     try {
-      const response = await fetch(`${BACKEND_URL}${url}`, options); // Updated to use the Render URL
+      const response = await fetch(`${BACKEND_URL}${url}`, options); // Fetching from the Render app URL
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (err) {
