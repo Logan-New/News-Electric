@@ -5,6 +5,7 @@ const multer = require('multer');
 const helmet = require('helmet');
 const cors = require('cors');
 const { body, validationResult } = require('express-validator');
+const morgan = require('morgan');
 require('dotenv').config();
 
 const app = express();
@@ -30,11 +31,12 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 app.use(helmet());
+app.use(morgan('combined')); // Logging middleware
 app.use('/css', express.static(CSS_DIR));
 app.use('/js', express.static(JS_DIR));
 app.use('/images', express.static(IMAGES_DIR));
 
-// Ensure required files exist
+// Helper function to ensure required files exist
 const ensureFileExists = async (filePath, defaultContent = '{}') => {
   try {
     await fs.access(filePath);
@@ -52,7 +54,8 @@ const initializeFiles = async () => {
     await ensureFileExists(path.join(DATA_DIR, 'services.json'), JSON.stringify({ services: [] }, null, 2));
     console.log('Initialization of directories and files completed.');
   } catch (err) {
-    console.error('Error during initialization:', err);
+    console.error('Critical error during initialization:', err);
+    process.exit(1); // Exit if initialization fails
   }
 };
 initializeFiles();
@@ -146,6 +149,9 @@ app.post(
 
     const { name, description, coverPhoto } = req.body;
     const images = req.files.map((file) => `/images/${file.filename}`);
+    if (images.length === 0) {
+      return res.status(400).json({ error: 'No images uploaded' });
+    }
 
     try {
       const servicesPath = path.join(DATA_DIR, 'services.json');
@@ -176,8 +182,13 @@ app.post(
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Unhandled Error:', err.stack);
+  console.error(`Error on ${req.method} ${req.url}:`, err.stack);
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
+});
+
+// Catch-all for unmatched routes
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found' });
 });
 
 // Start the server
