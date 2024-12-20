@@ -108,6 +108,12 @@ app.get('/upload', (req, res) => {
   res.sendFile(path.join(__dirname, 'upload.html'));
 });
 
+// Health Check Endpoint
+app.get('/healthz', (req, res) => {
+  console.log('GET request to /healthz');
+  res.status(200).send('OK');
+});
+
 // Admin authentication route
 app.post('/api/admin-auth', (req, res) => {
   console.log('POST request to /api/admin-auth');
@@ -193,5 +199,5 @@ app.use((req, res) => {
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on dynamic port ${PORT}`);
 });
