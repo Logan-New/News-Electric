@@ -3,42 +3,33 @@ const path = require('path');
 const fs = require('fs').promises;
 const multer = require('multer');
 const helmet = require('helmet');
-const cors = require('cors'); // Import CORS for enabling cross-origin requests
+const cors = require('cors');
 const { body, validationResult } = require('express-validator');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000; // Use Render's PORT or default to 3000
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'All4Jesus';
 
 // Constants for directory paths
 const DATA_DIR = path.join(__dirname, 'data');
-const IMAGES_DIR = path.join(__dirname, 'images'); // Static images folder in root
-const CSS_DIR = path.join(__dirname, 'css');  // CSS folder in root
-const JS_DIR = path.join(__dirname, 'js');    // JS folder in root
+const IMAGES_DIR = path.join(__dirname, 'images');
+const CSS_DIR = path.join(__dirname, 'css');
+const JS_DIR = path.join(__dirname, 'js');
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: ['https://logan-new.github.io'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+}));
+app.use(helmet());
+app.use('/css', express.static(CSS_DIR));
+app.use('/js', express.static(JS_DIR));
+app.use('/images', express.static(IMAGES_DIR));
 
-// Enable CORS for front-end to back-end communication (GitHub Pages to Render API)
-const allowedOrigins = ['https://logan-new.github.io']; // Replace with your actual GitHub Pages URL
-app.use(
-  cors({
-    origin: allowedOrigins,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  })
-);
-
-// Serve static files correctly from the root directory
-app.use('/css', express.static(CSS_DIR)); // Serve CSS from the root directory
-app.use('/js', express.static(JS_DIR));   // Serve JS from the root directory
-app.use('/images', express.static(IMAGES_DIR)); // Serve images from the root directory
-
-app.use(helmet()); // Add secure HTTP headers
-
-// Set up multer for file uploads
+// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
     try {
@@ -50,14 +41,14 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const timestamp = Date.now();
-    const cleanFilename = file.originalname.replace(/\s+/g, '_'); // Remove spaces
+    const cleanFilename = file.originalname.replace(/\s+/g, '_');
     cb(null, `${timestamp}-${cleanFilename}`);
   },
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit per file
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (!allowedTypes.includes(file.mimetype)) {
@@ -68,7 +59,7 @@ const upload = multer({
   },
 });
 
-// Routes for serving HTML pages from the root directory
+// Routes for serving HTML pages
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'about.html')));
 app.get('/services', (req, res) => res.sendFile(path.join(__dirname, 'services.html')));
@@ -78,10 +69,9 @@ app.get('/upload', (req, res) => res.sendFile(path.join(__dirname, 'upload.html'
 app.post('/api/admin-auth', (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
-    res.json({ success: true, redirect: '/upload' });
-  } else {
-    res.status(401).json({ success: false, message: 'Incorrect password.' });
+    return res.json({ success: true, redirect: '/upload' });
   }
+  res.status(401).json({ success: false, message: 'Incorrect password.' });
 });
 
 // Route to serve services.json
@@ -100,11 +90,10 @@ app.get('/api/services', async (req, res) => {
 // Add a new service
 app.post(
   '/api/admin/add-service',
-  upload.array('images', 40), // Allow up to 40 images
+  upload.array('images', 40),
   [
     body('name').isLength({ min: 3 }).withMessage('Name must be at least 3 characters long'),
     body('description').isLength({ min: 10 }).withMessage('Description must be at least 10 characters long'),
-    body('cover-photo').optional().notEmpty().withMessage('Cover photo is required if selected'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -120,8 +109,8 @@ app.post(
       let servicesData = { services: [] };
       try {
         servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
-      } catch (err) {
-        // If file does not exist, start with empty data
+      } catch {
+        // File doesn't exist yet
       }
 
       const newService = {
@@ -129,7 +118,7 @@ app.post(
         name,
         description,
         images,
-        coverPhoto: coverPhoto ? `/images/${coverPhoto}` : images[0], // Use the first image as the cover photo if none is selected
+        coverPhoto: coverPhoto ? `/images/${coverPhoto}` : images[0],
       };
 
       servicesData.services.push(newService);
@@ -142,7 +131,7 @@ app.post(
   }
 );
 
-// Update an existing service
+// Update a service
 app.put('/api/admin/update-service/:id', upload.array('images', 40), async (req, res) => {
   const { id } = req.params;
   const { name, description, coverPhoto } = req.body;
@@ -151,8 +140,8 @@ app.put('/api/admin/update-service/:id', upload.array('images', 40), async (req,
   try {
     const servicesPath = path.join(DATA_DIR, 'services.json');
     const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
-
     const service = servicesData.services.find((s) => s.id === id);
+
     if (!service) return res.status(404).json({ error: 'Service not found.' });
 
     if (name) service.name = name;
@@ -168,15 +157,15 @@ app.put('/api/admin/update-service/:id', upload.array('images', 40), async (req,
   }
 });
 
-// Delete an existing service
+// Delete a service
 app.delete('/api/admin/delete-service/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
     const servicesPath = path.join(DATA_DIR, 'services.json');
     const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
-
     const serviceIndex = servicesData.services.findIndex((s) => s.id === id);
+
     if (serviceIndex === -1) return res.status(404).json({ error: 'Service not found.' });
 
     const [removedService] = servicesData.services.splice(serviceIndex, 1);
@@ -188,28 +177,24 @@ app.delete('/api/admin/delete-service/:id', async (req, res) => {
   }
 });
 
-// DELETE an image from a service
+// Delete an image
 app.post('/api/admin/delete-image/:serviceId', async (req, res) => {
   const { serviceId } = req.params;
-  const { imageUrl } = req.body; // The image URL to delete
+  const { imageUrl } = req.body;
 
   try {
     const servicesPath = path.join(DATA_DIR, 'services.json');
     const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
-
     const service = servicesData.services.find((s) => s.id === serviceId);
+
     if (!service) return res.status(404).json({ error: 'Service not found.' });
 
-    // Remove the image from the service's images array
     service.images = service.images.filter((image) => image !== imageUrl);
 
-    // Delete the image from the file system
     const imagePath = path.join(IMAGES_DIR, imageUrl.replace('/images/', ''));
-    await fs.unlink(imagePath); // Remove the image from the filesystem
+    await fs.unlink(imagePath);
 
-    // Save the updated services data
     await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
-
     res.json({ success: true, message: 'Image deleted successfully.' });
   } catch (err) {
     console.error('Error deleting image:', err);
@@ -224,4 +209,4 @@ app.use((err, req, res, next) => {
 });
 
 // Start the server
-app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
