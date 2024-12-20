@@ -8,7 +8,8 @@ const { body, validationResult } = require('express-validator');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000; // Use Render's PORT or default to 3000
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'All4Jesus';
 
 // Constants for directory paths
