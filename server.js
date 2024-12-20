@@ -11,6 +11,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'All4Jesus';
 
+// Debugging: Log environment variables and server initialization
+console.log('Starting server with the following configuration:');
+console.log(`PORT: ${PORT}`);
+console.log(`ADMIN_PASSWORD: ${ADMIN_PASSWORD ? '*****' : 'Not Set'}`);
+
 // Constants for directory paths
 const DATA_DIR = path.join(__dirname, 'data');
 const IMAGES_DIR = path.join(__dirname, 'images');
@@ -28,6 +33,29 @@ app.use(helmet());
 app.use('/css', express.static(CSS_DIR));
 app.use('/js', express.static(JS_DIR));
 app.use('/images', express.static(IMAGES_DIR));
+
+// Ensure required files exist
+const ensureFileExists = async (filePath, defaultContent = '{}') => {
+  try {
+    await fs.access(filePath);
+    console.log(`File exists: ${filePath}`);
+  } catch {
+    console.log(`File missing, creating: ${filePath}`);
+    await fs.writeFile(filePath, defaultContent, 'utf8');
+  }
+};
+
+// Ensure required directories and files
+const initializeFiles = async () => {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await ensureFileExists(path.join(DATA_DIR, 'services.json'), JSON.stringify({ services: [] }, null, 2));
+    console.log('Initialization of directories and files completed.');
+  } catch (err) {
+    console.error('Error during initialization:', err);
+  }
+};
+initializeFiles();
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -60,13 +88,26 @@ const upload = multer({
 });
 
 // Routes for serving HTML pages
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'about.html')));
-app.get('/services', (req, res) => res.sendFile(path.join(__dirname, 'services.html')));
-app.get('/upload', (req, res) => res.sendFile(path.join(__dirname, 'upload.html')));
+app.get('/', (req, res) => {
+  console.log('GET request to /');
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+app.get('/about', (req, res) => {
+  console.log('GET request to /about');
+  res.sendFile(path.join(__dirname, 'about.html'));
+});
+app.get('/services', (req, res) => {
+  console.log('GET request to /services');
+  res.sendFile(path.join(__dirname, 'services.html'));
+});
+app.get('/upload', (req, res) => {
+  console.log('GET request to /upload');
+  res.sendFile(path.join(__dirname, 'upload.html'));
+});
 
 // Admin authentication route
 app.post('/api/admin-auth', (req, res) => {
+  console.log('POST request to /api/admin-auth');
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
     return res.json({ success: true, redirect: '/upload' });
@@ -76,6 +117,7 @@ app.post('/api/admin-auth', (req, res) => {
 
 // Route to serve services.json
 app.get('/api/services', async (req, res) => {
+  console.log('GET request to /api/services');
   try {
     const servicesPath = path.join(DATA_DIR, 'services.json');
     const servicesData = await fs.readFile(servicesPath, 'utf-8');
@@ -96,6 +138,7 @@ app.post(
     body('description').isLength({ min: 10 }).withMessage('Description must be at least 10 characters long'),
   ],
   async (req, res) => {
+    console.log('POST request to /api/admin/add-service');
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -110,7 +153,7 @@ app.post(
       try {
         servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
       } catch {
-        // File doesn't exist yet
+        console.log('services.json is missing or empty.');
       }
 
       const newService = {
@@ -131,82 +174,13 @@ app.post(
   }
 );
 
-// Update a service
-app.put('/api/admin/update-service/:id', upload.array('images', 40), async (req, res) => {
-  const { id } = req.params;
-  const { name, description, coverPhoto } = req.body;
-  const images = req.files.map((file) => `/images/${file.filename}`);
-
-  try {
-    const servicesPath = path.join(DATA_DIR, 'services.json');
-    const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
-    const service = servicesData.services.find((s) => s.id === id);
-
-    if (!service) return res.status(404).json({ error: 'Service not found.' });
-
-    if (name) service.name = name;
-    if (description) service.description = description;
-    if (images.length > 0) service.images = images;
-    if (coverPhoto) service.coverPhoto = `/images/${coverPhoto}`;
-
-    await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
-    res.json({ success: true, message: 'Service updated successfully!' });
-  } catch (err) {
-    console.error('Error updating service:', err);
-    res.status(500).json({ error: 'Failed to update service.' });
-  }
-});
-
-// Delete a service
-app.delete('/api/admin/delete-service/:id', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const servicesPath = path.join(DATA_DIR, 'services.json');
-    const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
-    const serviceIndex = servicesData.services.findIndex((s) => s.id === id);
-
-    if (serviceIndex === -1) return res.status(404).json({ error: 'Service not found.' });
-
-    const [removedService] = servicesData.services.splice(serviceIndex, 1);
-    await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
-    res.json({ success: true, message: 'Service deleted successfully!', service: removedService });
-  } catch (err) {
-    console.error('Error deleting service:', err);
-    res.status(500).json({ error: 'Failed to delete service.' });
-  }
-});
-
-// Delete an image
-app.post('/api/admin/delete-image/:serviceId', async (req, res) => {
-  const { serviceId } = req.params;
-  const { imageUrl } = req.body;
-
-  try {
-    const servicesPath = path.join(DATA_DIR, 'services.json');
-    const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
-    const service = servicesData.services.find((s) => s.id === serviceId);
-
-    if (!service) return res.status(404).json({ error: 'Service not found.' });
-
-    service.images = service.images.filter((image) => image !== imageUrl);
-
-    const imagePath = path.join(IMAGES_DIR, imageUrl.replace('/images/', ''));
-    await fs.unlink(imagePath);
-
-    await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
-    res.json({ success: true, message: 'Image deleted successfully.' });
-  } catch (err) {
-    console.error('Error deleting image:', err);
-    res.status(500).json({ error: 'Failed to delete image.' });
-  }
-});
-
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Unhandled Error:', err.stack);
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
 // Start the server
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
