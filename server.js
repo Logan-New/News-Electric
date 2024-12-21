@@ -93,7 +93,7 @@ const upload = multer({
 // Routes for serving HTML pages
 app.use(express.static(__dirname));
 
-app.get('/', (req, res) => {
+app.get('/index', (req, res) => {
   console.log('GET request to /');
   res.sendFile(path.join(__dirname, 'index.html'));
 });
