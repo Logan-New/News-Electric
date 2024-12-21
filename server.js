@@ -91,6 +91,8 @@ const upload = multer({
 });
 
 // Routes for serving HTML pages
+app.use(express.static(__dirname));
+
 app.get('/', (req, res) => {
   console.log('GET request to /');
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -105,7 +107,7 @@ app.get('/services', (req, res) => {
 });
 app.get('/upload', (req, res) => {
   console.log('GET request to /upload');
-  res.sendFile(path.join(__dirname, 'upload.html'));
+  res.sendFile(path.join(__dirname, 'supload.html'));
 });
 
 // Health Check Endpoint
