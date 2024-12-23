@@ -107,7 +107,7 @@ app.get('/services', (req, res) => {
 });
 app.get('/upload', (req, res) => {
   console.log('GET request to /upload');
-  res.sendFile(path.join(__dirname, 'supload.html'));
+  res.sendFile(path.join(__dirname, 'upload.html'));
 });
 
 // Health Check Endpoint
