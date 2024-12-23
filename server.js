@@ -32,9 +32,7 @@ app.use(cors({
 }));
 app.use(helmet());
 app.use(morgan('combined')); // Logging middleware
-app.use('/css', express.static(CSS_DIR));
-app.use('/js', express.static(JS_DIR));
-app.use('/images', express.static(IMAGES_DIR));
+app.use(express.static(__dirname));
 
 // Helper function to ensure required files exist
 const ensureFileExists = async (filePath, defaultContent = '{}') => {
@@ -91,8 +89,6 @@ const upload = multer({
 });
 
 // Routes for serving HTML pages
-app.use(express.static(__dirname));
-
 app.get('/index', (req, res) => {
   console.log('GET request to /');
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -156,10 +152,18 @@ app.post(
     }
 
     const { name, description, coverPhoto } = req.body;
-    const images = req.files.map((file) => `/images/${file.filename}`);
-    if (images.length === 0) {
-      return res.status(400).json({ error: 'No images uploaded' });
+
+    // Handle case where no files are uploaded or invalid file types
+    if (!req.files || req.files.length === 0) {
+      console.error('No images uploaded or invalid file types.');
+      return res.status(400).json({ error: 'No images uploaded or invalid file types.' });
     }
+
+    // Number the images left-to-right as they are uploaded
+    const images = req.files.map((file, index) => ({
+      path: `/images/${file.filename}`,
+      name: `Image ${index + 1}`, // Assign a numeric name to each image
+    }));
 
     try {
       const servicesPath = path.join(DATA_DIR, 'services.json');
@@ -170,17 +174,27 @@ app.post(
         console.log('services.json is missing or empty.');
       }
 
+      // Validate cover photo selection
+      const selectedCoverPhoto = images.find((img) => img.path === `/images/${coverPhoto}`);
+      const coverPhotoPath = selectedCoverPhoto ? selectedCoverPhoto.path : images[0].path;
+
       const newService = {
         id: Date.now().toString(),
         name,
         description,
-        images,
-        coverPhoto: coverPhoto ? `/images/${coverPhoto}` : images[0],
+        images: images.map((img) => img.path), // Only store paths in services.json
+        coverPhoto: coverPhotoPath,
       };
 
       servicesData.services.push(newService);
       await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
-      res.json({ success: true, message: 'Service added successfully!' });
+
+      // Return response with images and numbering for cover photo selection
+      res.json({
+        success: true,
+        message: 'Service added successfully!',
+        images: images.map((img, index) => ({ index: index + 1, path: img.path })),
+      });
     } catch (err) {
       console.error('Error saving new service:', err);
       res.status(500).json({ error: 'Failed to save new service.' });
