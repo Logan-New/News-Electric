@@ -159,10 +159,10 @@ app.post(
       return res.status(400).json({ error: 'No images uploaded or invalid file types.' });
     }
 
-    // Number the images left-to-right as they are uploaded
+    // Number the images left-to-right for the admin panel
     const images = req.files.map((file, index) => ({
       path: `/images/${file.filename}`,
-      name: `Image ${index + 1}`, // Assign a numeric name to each image
+      name: `Image ${index + 1}`, // Numbering for admin panel
     }));
 
     try {
@@ -182,18 +182,18 @@ app.post(
         id: Date.now().toString(),
         name,
         description,
-        images: images.map((img) => img.path), // Only store paths in services.json
+        images: images.map((img) => img.path), // Store paths only
         coverPhoto: coverPhotoPath,
       };
 
       servicesData.services.push(newService);
       await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
 
-      // Return response with images and numbering for cover photo selection
+      // Return response with images numbered for the admin panel
       res.json({
         success: true,
         message: 'Service added successfully!',
-        images: images.map((img, index) => ({ index: index + 1, path: img.path })),
+        images: images.map((img, index) => ({ index: index + 1, path: img.path })), // Numbered response
       });
     } catch (err) {
       console.error('Error saving new service:', err);
