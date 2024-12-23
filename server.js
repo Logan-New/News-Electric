@@ -32,7 +32,11 @@ app.use(cors({
 }));
 app.use(helmet());
 app.use(morgan('combined')); // Logging middleware
-app.use(express.static(__dirname));
+
+// Static file serving
+app.use('/images', express.static(IMAGES_DIR)); // Serve images directory
+app.use('/css', express.static(CSS_DIR)); // Serve CSS files
+app.use('/js', express.static(JS_DIR)); // Serve JavaScript files
 
 // Helper function to ensure required files exist
 const ensureFileExists = async (filePath, defaultContent = '{}') => {
@@ -49,11 +53,15 @@ const ensureFileExists = async (filePath, defaultContent = '{}') => {
 const initializeFiles = async () => {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
-    await ensureFileExists(path.join(DATA_DIR, 'services.json'), JSON.stringify({ services: [] }, null, 2));
-    console.log('Initialization of directories and files completed.');
+    console.log(`Directory ensured: ${DATA_DIR}`);
+    await fs.mkdir(IMAGES_DIR, { recursive: true });
+    console.log(`Directory ensured: ${IMAGES_DIR}`);
+    const servicesPath = path.join(DATA_DIR, 'services.json');
+    await ensureFileExists(servicesPath, JSON.stringify({ services: [] }, null, 2));
+    console.log(`File ensured: ${servicesPath}`);
   } catch (err) {
-    console.error('Critical error during initialization:', err);
-    process.exit(1); // Exit if initialization fails
+    console.error('Initialization Error:', err);
+    process.exit(1);
   }
 };
 initializeFiles();
@@ -88,9 +96,15 @@ const upload = multer({
   },
 });
 
+// Debugging for all incoming requests
+app.use((req, res, next) => {
+  console.log(`Incoming Request: ${req.method} ${req.url}`);
+  next();
+});
+
 // Routes for serving HTML pages
 app.get('/index', (req, res) => {
-  console.log('GET request to /');
+  console.log('GET request to /index');
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 app.get('/about', (req, res) => {
