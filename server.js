@@ -14,8 +14,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'All4Jesus';
 
 // Debugging: Log environment variables and server initialization
 console.log('Starting server with the following configuration:');
-console.log(`PORT: ${PORT}`);
-console.log(`ADMIN_PASSWORD: ${ADMIN_PASSWORD ? '*****' : 'Not Set'}`);
+console.log(PORT: ${PORT});
+console.log(ADMIN_PASSWORD: ${ADMIN_PASSWORD ? '*****' : 'Not Set'});
 
 // Constants for directory paths
 const DATA_DIR = path.join(__dirname, 'data');
@@ -32,19 +32,15 @@ app.use(cors({
 }));
 app.use(helmet());
 app.use(morgan('combined')); // Logging middleware
-
-// Static file serving
-app.use('/images', express.static(IMAGES_DIR)); // Serve images directory
-app.use('/css', express.static(CSS_DIR)); // Serve CSS files
-app.use('/js', express.static(JS_DIR)); // Serve JavaScript files
+app.use(express.static(__dirname));
 
 // Helper function to ensure required files exist
 const ensureFileExists = async (filePath, defaultContent = '{}') => {
   try {
     await fs.access(filePath);
-    console.log(`File exists: ${filePath}`);
+    console.log(File exists: ${filePath});
   } catch {
-    console.log(`File missing, creating: ${filePath}`);
+    console.log(File missing, creating: ${filePath});
     await fs.writeFile(filePath, defaultContent, 'utf8');
   }
 };
@@ -53,15 +49,11 @@ const ensureFileExists = async (filePath, defaultContent = '{}') => {
 const initializeFiles = async () => {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
-    console.log(`Directory ensured: ${DATA_DIR}`);
-    await fs.mkdir(IMAGES_DIR, { recursive: true });
-    console.log(`Directory ensured: ${IMAGES_DIR}`);
-    const servicesPath = path.join(DATA_DIR, 'services.json');
-    await ensureFileExists(servicesPath, JSON.stringify({ services: [] }, null, 2));
-    console.log(`File ensured: ${servicesPath}`);
+    await ensureFileExists(path.join(DATA_DIR, 'services.json'), JSON.stringify({ services: [] }, null, 2));
+    console.log('Initialization of directories and files completed.');
   } catch (err) {
-    console.error('Initialization Error:', err);
-    process.exit(1);
+    console.error('Critical error during initialization:', err);
+    process.exit(1); // Exit if initialization fails
   }
 };
 initializeFiles();
@@ -79,7 +71,7 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const timestamp = Date.now();
     const cleanFilename = file.originalname.replace(/\s+/g, '_');
-    cb(null, `${timestamp}-${cleanFilename}`);
+    cb(null, ${timestamp}-${cleanFilename});
   },
 });
 
@@ -96,15 +88,9 @@ const upload = multer({
   },
 });
 
-// Debugging for all incoming requests
-app.use((req, res, next) => {
-  console.log(`Incoming Request: ${req.method} ${req.url}`);
-  next();
-});
-
 // Routes for serving HTML pages
 app.get('/index', (req, res) => {
-  console.log('GET request to /index');
+  console.log('GET request to /');
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 app.get('/about', (req, res) => {
@@ -175,8 +161,8 @@ app.post(
 
     // Number the images left-to-right for the admin panel
     const images = req.files.map((file, index) => ({
-      path: `/images/${file.filename}`,
-      name: `Image ${index + 1}`, // Numbering for admin panel
+      path: /images/${file.filename},
+      name: Image ${index + 1}, // Numbering for admin panel
     }));
 
     try {
@@ -189,7 +175,7 @@ app.post(
       }
 
       // Validate cover photo selection
-      const selectedCoverPhoto = images.find((img) => img.path === `/images/${coverPhoto}`);
+      const selectedCoverPhoto = images.find((img) => img.path === /images/${coverPhoto});
       const coverPhotoPath = selectedCoverPhoto ? selectedCoverPhoto.path : images[0].path;
 
       const newService = {
@@ -218,7 +204,7 @@ app.post(
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(`Error on ${req.method} ${req.url}:`, err.stack);
+  console.error(Error on ${req.method} ${req.url}:, err.stack);
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
@@ -229,5 +215,5 @@ app.use((req, res) => {
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server running on dynamic port ${PORT}`);
+  console.log(Server running on dynamic port ${PORT});
 });
