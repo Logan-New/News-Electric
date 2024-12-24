@@ -10,10 +10,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const imageInput = document.getElementById('images');
   const imagePreviewContainer = document.getElementById('image-preview-container');
   const coverPhotoSelect = document.getElementById('cover-photo');
-  let selectedImages = []; // To track selected images for preview and form submission
-  let imagesToDelete = [];  // To keep track of images to delete before saving
+  let selectedImages = [];
+  let imagesToDelete = [];
 
-  const BACKEND_URL = 'https://news-electric.onrender.com'; // Ensure this is the correct backend URL for your deployed app
+  const BACKEND_URL = 'https://news-electric.onrender.com';
 
   const showFeedback = (message, isSuccess = true) => {
     if (feedbackMessage && feedbackSection) {
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const fetchData = async (url, options = {}) => {
     try {
-      const response = await fetch(`${BACKEND_URL}${url}`, options); 
+      const response = await fetch(`${BACKEND_URL}${url}`, options);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (err) {
@@ -57,6 +57,55 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  const setupModal = () => {
+    const modal = document.createElement('div');
+    modal.id = 'image-modal';
+    modal.classList.add('modal', 'hidden');
+    modal.innerHTML = `
+      <div class="modal-content">
+        <span id="close-modal" class="close">&times;</span>
+        <div class="slideshow-container">
+          <button id="prev-slide" class="slide-control">&lt;</button>
+          <img id="modal-image" src="" alt="Service Image">
+          <button id="next-slide" class="slide-control">&gt;</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const closeModal = () => {
+      modal.classList.add('hidden');
+    };
+
+    document.getElementById('close-modal').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    return modal;
+  };
+
+  const modal = setupModal();
+  let currentImageIndex = 0;
+  let currentImages = [];
+
+  const showModal = (images, startIndex = 0) => {
+    currentImages = images;
+    currentImageIndex = startIndex;
+    document.getElementById('modal-image').src = currentImages[currentImageIndex];
+    modal.classList.remove('hidden');
+  };
+
+  document.getElementById('prev-slide').addEventListener('click', () => {
+    currentImageIndex = (currentImageIndex - 1 + currentImages.length) % currentImages.length;
+    document.getElementById('modal-image').src = currentImages[currentImageIndex];
+  });
+
+  document.getElementById('next-slide').addEventListener('click', () => {
+    currentImageIndex = (currentImageIndex + 1) % currentImages.length;
+    document.getElementById('modal-image').src = currentImages[currentImageIndex];
+  });
+
   const loadServices = async () => {
     try {
       const data = await fetchData('/api/services', { cache: 'no-store' });
@@ -78,22 +127,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
           `;
           serviceItem.addEventListener('click', () => {
-            const imagesHTML = service.images
-              .map((image) => `
-                <div class="image-preview">
-                  <img src="${image}" alt="${service.name}" style="max-width: 100%; margin: 5px;">
-                </div>`)
-              .join('');
-            servicesContainer.innerHTML = `
-              <h3>${service.name}</h3>
-              <p>${service.description}</p>
-              <div>${imagesHTML}</div>
-              <button id="back-to-services-btn">Back to Services</button>
-            `;
-            const backToServicesBtn = document.getElementById('back-to-services-btn');
-            backToServicesBtn.addEventListener('click', () => {
-              window.location.href = '/services';
-            });
+            if (service.images?.length) {
+              showModal(service.images);
+            } else {
+              showFeedback('No images available for this service.', false);
+            }
           });
           servicesContainer.appendChild(serviceItem);
         }
@@ -116,6 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const populateServiceForm = async (id) => {
     const nameInput = document.getElementById('name');
     const descriptionInput = document.getElementById('description');
+    const coverPhotoSelect = document.getElementById('cover-photo');
 
     try {
       const data = await fetchData('/api/services', { cache: 'no-store' });
@@ -136,6 +175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               )
               .join('')
           : '';
+
         coverPhotoSelect.innerHTML = '<option value="">Select a cover photo</option>';
         service.images.forEach((image, index) => {
           const option = document.createElement('option');
