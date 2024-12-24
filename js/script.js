@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const imagePreviewContainer = document.getElementById('image-preview-container');
   const coverPhotoSelect = document.getElementById('cover-photo');
   let selectedImages = []; // To track selected images for preview and form submission
-  let imagesToDelete = [];  // To keep track of images to delete before saving
+  let imagesToDelete = []; // To keep track of images to delete before saving
   let galleryImages = []; // To keep track of images for the gallery display
 
   // Backend URL pointing to your Render app
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 : '<p>No image available</p>'
             }
           `;
-          // Clicking a service loads its details and shows all images (no delete functionality or names)
+          // Clicking a service loads its details and shows all images
           serviceItem.addEventListener('click', () => {
             const imagesHTML = service.images
               .map((image) => `
@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         coverPhotoSelect.innerHTML = '<option value="">Select a cover photo</option>';
         service.images.forEach((image, index) => {
           const option = document.createElement('option');
-          option.value = index;
+          option.value = image;
           option.textContent = `Image ${index + 1}`;
           coverPhotoSelect.appendChild(option);
         });
@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else {
         // Reset form if no service is selected
         form.reset();
-        document.getElementById('image-preview-container').innerHTML = '';
+        imagePreviewContainer.innerHTML = '';
         coverPhotoSelect.innerHTML = '<option value="">Select a cover photo</option>';
       }
     });
@@ -190,7 +190,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (imageInput) {
     imageInput.addEventListener('change', (e) => {
       const files = e.target.files;
-      // We will add the new files to the existing previews instead of replacing them
       Array.from(files).forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = function (event) {
@@ -217,10 +216,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           imagePreviewContainer.appendChild(imgContainer);
 
           selectedImages.push(imageElement); // Keep track of selected images for form submission
-          galleryImages.push(imageElement); // Keep track for gallery display
 
           const option = document.createElement('option');
-          option.value = index;
+          option.value = event.target.result;
           option.textContent = `Image ${index + 1}`;
           coverPhotoSelect.appendChild(option);
         };
@@ -235,11 +233,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
 
       const formData = new FormData(form);
-      const coverPhotoIndex = coverPhotoSelect.value;
-      formData.append('cover-photo', coverPhotoIndex); // Add the selected cover photo to the form data
-
-      selectedImages.forEach((img) => formData.append('images', img.src)); // Add selected images to form data
-      imagesToDelete.forEach((img) => formData.append('imagesToDelete', img)); // Add images to delete list
+      const coverPhoto = coverPhotoSelect.value;
+      formData.append('cover-photo', coverPhoto); // Add the selected cover photo to the form data
 
       const id = serviceSelect.value;
       const method = id ? 'PUT' : 'POST';
@@ -251,8 +246,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           showFeedback(result.message || 'Service successfully managed!');
           await loadServices();
           form.reset();
-          document.getElementById('image-preview-container').innerHTML = '';
-          imagesToDelete = []; // Reset the delete list
+          imagePreviewContainer.innerHTML = '';
+          imagesToDelete = [];
         } else {
           showFeedback(result.error || 'Failed to manage service.', false);
         }
