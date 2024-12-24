@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const coverPhotoSelect = document.getElementById('cover-photo');
   let selectedImages = [];
   let imagesToDelete = [];
-
   const BACKEND_URL = 'https://news-electric.onrender.com';
 
   const showFeedback = (message, isSuccess = true) => {
@@ -58,7 +57,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const setupModal = () => {
-    const modal = document.getElementById('image-modal');
+    const modal = document.createElement('div');
+    modal.id = 'image-modal';
+    modal.classList.add('modal', 'hidden');
+    modal.innerHTML = `
+      <div class="modal-content">
+        <button id="close-modal" class="close">&times;</button>
+        <img id="modal-image" class="modal-image" src="" alt="Service Image">
+        <div class="modal-controls">
+          <button id="prev-slide" class="slide-control">&lt;</button>
+          <button id="next-slide" class="slide-control">&gt;</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
     const modalImage = document.getElementById('modal-image');
     const prevSlide = document.getElementById('prev-slide');
     const nextSlide = document.getElementById('next-slide');
