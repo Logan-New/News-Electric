@@ -6,7 +6,6 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { body, validationResult } = require('express-validator');
 const morgan = require('morgan');
-const crypto = require('crypto');  // For generating nonces
 require('dotenv').config();
 
 const app = express();
@@ -23,20 +22,6 @@ const DATA_DIR = path.join(__dirname, 'data');
 const IMAGES_DIR = path.join(__dirname, 'images');
 const CSS_DIR = path.join(__dirname, 'css');
 const JS_DIR = path.join(__dirname, 'js');
-
-// Middleware to generate nonce for each request and set the CSP header
-app.use((req, res, next) => {
-  // Generate a random nonce for this request
-  const nonce = crypto.randomBytes(16).toString('base64');
-  
-  // Pass the nonce to the response locals (for use in HTML)
-  res.locals.nonce = nonce;
-  
-  // Set the CSP header with the nonce (allow only scripts with this nonce)
-  res.setHeader('Content-Security-Policy', `script-src 'self' 'nonce-${nonce}'`);
-
-  next();
-});
 
 // Middleware
 app.use(express.json());
@@ -122,7 +107,7 @@ app.get('/services', (req, res) => {
 });
 app.get('/upload', (req, res) => {
   console.log('GET request to /upload');
-  res.render('upload.html', { nonce: res.locals.nonce }); // Inject nonce into the HTML
+  res.sendFile(path.join(__dirname, 'upload.html'));
 });
 
 // Health Check Endpoint
