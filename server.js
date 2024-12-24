@@ -188,6 +188,29 @@ app.post(
   }
 );
 
+// Delete a service by ID
+app.delete('/api/admin/delete-service/:id', async (req, res) => {
+  const { id } = req.params;
+  console.log('DELETE request to /api/admin/delete-service with ID:', id);
+
+  const servicesPath = path.join(DATA_DIR, 'services.json');
+  try {
+    const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
+
+    const updatedServices = servicesData.services.filter((service) => service.id !== id);
+
+    if (updatedServices.length === servicesData.services.length) {
+      return res.status(404).json({ error: 'Service not found.' });
+    }
+
+    await fs.writeFile(servicesPath, JSON.stringify({ services: updatedServices }, null, 2));
+    res.json({ success: true, message: 'Service deleted successfully!' });
+  } catch (err) {
+    console.error('Error deleting service:', err);
+    res.status(500).json({ error: 'Failed to delete service.' });
+  }
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(`Error on ${req.method} ${req.url}:`, err.stack);
