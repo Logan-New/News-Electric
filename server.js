@@ -12,9 +12,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'All4Jesus';
 
-// Directories
+// Constants for directory paths
 const DATA_DIR = path.join(__dirname, 'data');
 const IMAGES_DIR = path.join(__dirname, 'images');
+const CSS_DIR = path.join(__dirname, 'css');
+const JS_DIR = path.join(__dirname, 'js');
 
 // Middleware
 app.use(express.json());
@@ -24,7 +26,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 app.use(helmet());
-app.use(morgan('combined'));
+app.use(morgan('combined')); // Logging middleware
 app.use(express.static(__dirname));
 
 // Helper function to ensure required files exist
@@ -38,19 +40,20 @@ const ensureFileExists = async (filePath, defaultContent = '{}') => {
   }
 };
 
-// Initialize required directories and files
-(async () => {
+// Ensure required directories and files
+const initializeFiles = async () => {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     await ensureFileExists(path.join(DATA_DIR, 'services.json'), JSON.stringify({ services: [] }, null, 2));
     console.log('Initialization of directories and files completed.');
   } catch (err) {
     console.error('Critical error during initialization:', err);
-    process.exit(1);
+    process.exit(1); // Exit if initialization fails
   }
-})();
+};
+initializeFiles();
 
-// Multer configuration for file uploads
+// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
     try {
@@ -80,16 +83,26 @@ const upload = multer({
   },
 });
 
-// Routes for serving static HTML files
-app.get('/index', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'about.html')));
-app.get('/services', (req, res) => res.sendFile(path.join(__dirname, 'services.html')));
-app.get('/upload', (req, res) => res.sendFile(path.join(__dirname, 'upload.html')));
+// Routes for serving HTML pages
+app.get('/index', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+app.get('/about', (req, res) => {
+  res.sendFile(path.join(__dirname, 'about.html'));
+});
+app.get('/services', (req, res) => {
+  res.sendFile(path.join(__dirname, 'services.html'));
+});
+app.get('/upload', (req, res) => {
+  res.sendFile(path.join(__dirname, 'upload.html'));
+});
 
-// Health check endpoint
-app.get('/healthz', (req, res) => res.status(200).send('OK'));
+// Health Check Endpoint
+app.get('/healthz', (req, res) => {
+  res.status(200).send('OK');
+});
 
-// Admin authentication
+// Admin authentication route
 app.post('/api/admin-auth', (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
@@ -98,7 +111,7 @@ app.post('/api/admin-auth', (req, res) => {
   res.status(401).json({ success: false, message: 'Incorrect password.' });
 });
 
-// Fetch services
+// Route to serve services.json
 app.get('/api/services', async (req, res) => {
   try {
     const servicesPath = path.join(DATA_DIR, 'services.json');
@@ -106,7 +119,6 @@ app.get('/api/services', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json(JSON.parse(servicesData));
   } catch (err) {
-    console.error('Error reading services.json:', err);
     res.status(500).json({ error: 'Failed to retrieve services data.' });
   }
 });
@@ -132,8 +144,6 @@ app.post(
     }
 
     const images = req.files.map((file) => `/images/${file.filename}`);
-
-    // Validate and set the cover photo
     const coverPhotoPath = images.includes(`/images/${coverPhoto}`) ? `/images/${coverPhoto}` : images[0];
 
     const newService = {
@@ -149,22 +159,79 @@ app.post(
       const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
       servicesData.services.push(newService);
       await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
-      res.json({ success: true, message: 'Service added successfully!' });
+      res.json({ success: true, message: 'Service added successfully!', newService });
     } catch (err) {
-      console.error('Error saving new service:', err);
-      res.status(500).json({ error: 'Failed to save new service.' });
+      res.status(500).json({ error: 'Failed to save the service.' });
     }
   }
 );
 
+// Update an existing service
+app.put(
+  '/api/admin/update-service/:id',
+  upload.array('images', 40),
+  async (req, res) => {
+    const { id } = req.params;
+    const { name, description, coverPhoto } = req.body;
+
+    try {
+      const servicesPath = path.join(DATA_DIR, 'services.json');
+      const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
+      const service = servicesData.services.find((s) => s.id === id);
+
+      if (!service) {
+        return res.status(404).json({ error: 'Service not found.' });
+      }
+
+      service.name = name || service.name;
+      service.description = description || service.description;
+
+      if (req.files && req.files.length > 0) {
+        const newImages = req.files.map((file) => `/images/${file.filename}`);
+        service.images.push(...newImages);
+      }
+
+      service.coverPhoto = coverPhoto || service.images[0];
+
+      await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
+      res.json({ success: true, message: 'Service updated successfully!', service });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to update the service.' });
+    }
+  }
+);
+
+// Delete a service
+app.delete('/api/admin/delete-service/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const servicesPath = path.join(DATA_DIR, 'services.json');
+    const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
+    const updatedServices = servicesData.services.filter((service) => service.id !== id);
+
+    if (updatedServices.length === servicesData.services.length) {
+      return res.status(404).json({ error: 'Service not found.' });
+    }
+
+    await fs.writeFile(servicesPath, JSON.stringify({ services: updatedServices }, null, 2));
+    res.json({ success: true, message: 'Service deleted successfully!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete the service.' });
+  }
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(`Error on ${req.method} ${req.url}:`, err.stack);
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
 // Catch-all for unmatched routes
-app.use((req, res) => res.status(404).json({ error: 'Not Found' }));
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found' });
+});
 
 // Start the server
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on dynamic port ${PORT}`);
+});
