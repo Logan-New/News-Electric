@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { body, validationResult } = require('express-validator');
 const morgan = require('morgan');
+const crypto = require('crypto');  // For generating nonces
 require('dotenv').config();
 
 const app = express();
@@ -23,6 +24,20 @@ const IMAGES_DIR = path.join(__dirname, 'images');
 const CSS_DIR = path.join(__dirname, 'css');
 const JS_DIR = path.join(__dirname, 'js');
 
+// Middleware to generate nonce for each request and set the CSP header
+app.use((req, res, next) => {
+  // Generate a random nonce for this request
+  const nonce = crypto.randomBytes(16).toString('base64');
+  
+  // Pass the nonce to the response locals (for use in HTML)
+  res.locals.nonce = nonce;
+  
+  // Set the CSP header with the nonce (allow only scripts with this nonce)
+  res.setHeader('Content-Security-Policy', `script-src 'self' 'nonce-${nonce}'`);
+
+  next();
+});
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -32,7 +47,9 @@ app.use(cors({
 }));
 app.use(helmet());
 app.use(morgan('combined')); // Logging middleware
-app.use(express.static(__dirname));
+app.use('/css', express.static(CSS_DIR));
+app.use('/js', express.static(JS_DIR));
+app.use('/images', express.static(IMAGES_DIR));
 
 // Helper function to ensure required files exist
 const ensureFileExists = async (filePath, defaultContent = '{}') => {
@@ -89,6 +106,8 @@ const upload = multer({
 });
 
 // Routes for serving HTML pages
+app.use(express.static(__dirname));
+
 app.get('/index', (req, res) => {
   console.log('GET request to /');
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -103,7 +122,7 @@ app.get('/services', (req, res) => {
 });
 app.get('/upload', (req, res) => {
   console.log('GET request to /upload');
-  res.sendFile(path.join(__dirname, 'upload.html'));
+  res.render('upload.html', { nonce: res.locals.nonce }); // Inject nonce into the HTML
 });
 
 // Health Check Endpoint
@@ -152,18 +171,10 @@ app.post(
     }
 
     const { name, description, coverPhoto } = req.body;
-
-    // Handle case where no files are uploaded or invalid file types
-    if (!req.files || req.files.length === 0) {
-      console.error('No images uploaded or invalid file types.');
-      return res.status(400).json({ error: 'No images uploaded or invalid file types.' });
+    const images = req.files.map((file) => `/images/${file.filename}`);
+    if (images.length === 0) {
+      return res.status(400).json({ error: 'No images uploaded' });
     }
-
-    // Number the images left-to-right for the admin panel
-    const images = req.files.map((file, index) => ({
-      path: `/images/${file.filename}`,
-      name: `Image ${index + 1}`, // Numbering for admin panel
-    }));
 
     try {
       const servicesPath = path.join(DATA_DIR, 'services.json');
@@ -174,27 +185,17 @@ app.post(
         console.log('services.json is missing or empty.');
       }
 
-      // Validate cover photo selection
-      const selectedCoverPhoto = images.find((img) => img.path === `/images/${coverPhoto}`);
-      const coverPhotoPath = selectedCoverPhoto ? selectedCoverPhoto.path : images[0].path;
-
       const newService = {
         id: Date.now().toString(),
         name,
         description,
-        images: images.map((img) => img.path), // Store paths only
-        coverPhoto: coverPhotoPath,
+        images,
+        coverPhoto: coverPhoto ? `/images/${coverPhoto}` : images[0],
       };
 
       servicesData.services.push(newService);
       await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
-
-      // Return response with images numbered for the admin panel
-      res.json({
-        success: true,
-        message: 'Service added successfully!',
-        images: images.map((img, index) => ({ index: index + 1, path: img.path })), // Numbered response
-      });
+      res.json({ success: true, message: 'Service added successfully!' });
     } catch (err) {
       console.error('Error saving new service:', err);
       res.status(500).json({ error: 'Failed to save new service.' });
