@@ -10,9 +10,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const imageInput = document.getElementById('images');
   const imagePreviewContainer = document.getElementById('image-preview-container');
   const coverPhotoSelect = document.getElementById('cover-photo');
-  let selectedImages = [];
-  let imagesToDelete = [];
-  let galleryImages = [];
+  let selectedImages = []; // To track selected images for preview and form submission
+  let imagesToDelete = [];  // To keep track of images to delete before saving
 
   const BACKEND_URL = 'https://news-electric.onrender.com';
 
@@ -36,128 +35,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
-  if (adminLink) {
-    adminLink.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const password = prompt('Enter Admin Password:');
-      if (!password) return alert('Password is required.');
-      try {
-        const result = await fetchData('/api/admin-auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password }),
-        });
-        if (result.success) {
-          window.location.href = '/upload';
-        } else {
-          alert(result.message || 'Access denied.');
-        }
-      } catch (err) {
-        showFeedback('Authentication failed.', false);
-      }
+  const rebuildCoverPhotoDropdown = () => {
+    coverPhotoSelect.innerHTML = '<option value="">Select a cover photo</option>';
+    selectedImages.forEach((image, index) => {
+      const option = document.createElement('option');
+      option.value = image.src || image.name; // Handle both file inputs and URLs
+      option.textContent = `Image ${index + 1}`;
+      coverPhotoSelect.appendChild(option);
     });
-  }
-
-  const loadServices = async () => {
-    try {
-      const data = await fetchData('/api/services', { cache: 'no-store' });
-
-      if (servicesContainer) servicesContainer.innerHTML = '';
-      if (serviceSelect) serviceSelect.innerHTML = '<option value="">Add New Service</option>';
-
-      data.services.forEach((service) => {
-        if (servicesContainer) {
-          const serviceItem = document.createElement('div');
-          serviceItem.classList.add('service-item');
-          serviceItem.innerHTML = `
-            <h3>${service.name}</h3>
-            <p>${service.description}</p>
-            ${
-              service.images?.length
-                ? `<img src="${service.images[0]}" alt="${service.name}" style="max-width: 100%; height: auto;">`
-                : '<p>No image available</p>'
-            }
-          `;
-          servicesContainer.appendChild(serviceItem);
-        }
-
-        if (serviceSelect) {
-          const option = document.createElement('option');
-          option.value = service.id;
-          option.textContent = service.name;
-          serviceSelect.appendChild(option);
-        }
-      });
-    } catch (err) {
-      showFeedback('Failed to load services. Try again later.', false);
-    }
   };
-
-  const populateServiceForm = async (id) => {
-    const nameInput = document.getElementById('name');
-    const descriptionInput = document.getElementById('description');
-
-    try {
-      const data = await fetchData('/api/services', { cache: 'no-store' });
-      const service = data.services.find((s) => s.id === id);
-
-      if (service) {
-        nameInput.value = service.name || '';
-        descriptionInput.value = service.description || '';
-        imagePreviewContainer.innerHTML = service.images
-          ? service.images
-              .map(
-                (image, index) => `
-                  <div class="image-preview">
-                    <img src="${image}" alt="${service.name}">
-                    <button class="delete-img">X</button>
-                    <label>Image ${index + 1}</label>
-                  </div>`
-              )
-              .join('')
-          : '';
-
-        coverPhotoSelect.innerHTML = '<option value="">Select a cover photo</option>';
-        service.images.forEach((image) => {
-          const option = document.createElement('option');
-          option.value = image; // Use the image path as the value
-          option.textContent = `Image ${service.images.indexOf(image) + 1}`;
-          coverPhotoSelect.appendChild(option);
-        });
-
-        document.querySelectorAll('.delete-img').forEach((button) => {
-          button.addEventListener('click', async (e) => {
-            const imageElement = e.target.closest('.image-preview');
-            const imageUrl = imageElement.querySelector('img').src;
-            imageElement.remove();
-            imagesToDelete.push(imageUrl);
-          });
-        });
-      }
-    } catch (err) {
-      showFeedback('Failed to populate service form.', false);
-    }
-  };
-
-  if (serviceSelect) {
-    serviceSelect.addEventListener('change', (e) => {
-      const selectedServiceId = e.target.value;
-      if (selectedServiceId) {
-        populateServiceForm(selectedServiceId);
-      } else {
-        form.reset();
-        imagePreviewContainer.innerHTML = '';
-        coverPhotoSelect.innerHTML = '<option value="">Select a cover photo</option>';
-      }
-    });
-  }
 
   if (imageInput) {
     imageInput.addEventListener('change', (e) => {
-      const files = e.target.files;
-      Array.from(files).forEach((file, index) => {
+      const files = Array.from(e.target.files);
+      const currentCount = selectedImages.length;
+
+      files.forEach((file, index) => {
         const reader = new FileReader();
-        reader.onload = function (event) {
+        reader.onload = (event) => {
           const imgContainer = document.createElement('div');
           imgContainer.classList.add('image-preview');
 
@@ -172,21 +67,66 @@ document.addEventListener('DOMContentLoaded', async () => {
             imgContainer.remove();
             selectedImages = selectedImages.filter((img) => img !== file);
             imagesToDelete.push(event.target.result);
+            rebuildCoverPhotoDropdown();
           });
 
           imgContainer.appendChild(imageElement);
           imgContainer.appendChild(deleteButton);
           imagePreviewContainer.appendChild(imgContainer);
 
-          selectedImages.push(file);
-
-          const option = document.createElement('option');
-          option.value = event.target.result;
-          option.textContent = `Image ${index + 1}`;
-          coverPhotoSelect.appendChild(option);
+          selectedImages.push({ src: event.target.result, name: file.name });
+          rebuildCoverPhotoDropdown();
         };
+
         reader.readAsDataURL(file);
       });
+    });
+  }
+
+  const populateServiceForm = async (id) => {
+    const nameInput = document.getElementById('name');
+    const descriptionInput = document.getElementById('description');
+
+    try {
+      const data = await fetchData('/api/services', { cache: 'no-store' });
+      const service = data.services.find((s) => s.id === id);
+
+      if (service) {
+        nameInput.value = service.name || '';
+        descriptionInput.value = service.description || '';
+        selectedImages = service.images.map((image) => ({ src: image }));
+
+        imagePreviewContainer.innerHTML = service.images
+          ? service.images
+              .map(
+                (image, index) => `
+                  <div class="image-preview">
+                    <img src="${image}" alt="${service.name}">
+                    <label>Image ${index + 1}</label>
+                  </div>`
+              )
+              .join('')
+          : '';
+
+        rebuildCoverPhotoDropdown();
+      }
+    } catch (err) {
+      showFeedback('Failed to populate service form.', false);
+    }
+  };
+
+  if (serviceSelect) {
+    serviceSelect.addEventListener('change', (e) => {
+      const selectedServiceId = e.target.value;
+      if (selectedServiceId) {
+        populateServiceForm(selectedServiceId);
+      } else {
+        form.reset();
+        selectedImages = [];
+        imagesToDelete = [];
+        imagePreviewContainer.innerHTML = '';
+        rebuildCoverPhotoDropdown();
+      }
     });
   }
 
@@ -198,8 +138,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const coverPhoto = coverPhotoSelect.value;
       formData.append('coverPhoto', coverPhoto);
 
-      selectedImages.forEach((file) => formData.append('images', file));
-      imagesToDelete.forEach((img) => formData.append('imagesToDelete', img));
+      selectedImages.forEach((image) => {
+        formData.append('images', image.name || image.src);
+      });
+
+      imagesToDelete.forEach((image) => {
+        formData.append('imagesToDelete', image);
+      });
 
       const id = serviceSelect.value;
       const method = id ? 'PUT' : 'POST';
@@ -211,8 +156,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           showFeedback(result.message || 'Service successfully managed!');
           await loadServices();
           form.reset();
-          imagePreviewContainer.innerHTML = '';
+          selectedImages = [];
           imagesToDelete = [];
+          imagePreviewContainer.innerHTML = '';
+          rebuildCoverPhotoDropdown();
         } else {
           showFeedback(result.error || 'Failed to manage service.', false);
         }
