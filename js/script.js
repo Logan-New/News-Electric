@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const coverPhotoSelect = document.getElementById('cover-photo');
   let selectedImages = []; // To track selected images for preview and form submission
   let imagesToDelete = [];  // To keep track of images to delete before saving
-  let galleryImages = []; // To keep track of images for the gallery display
 
   // Backend URL pointing to your Render app
   const BACKEND_URL = 'https://news-electric.onrender.com'; // Ensure this is the correct backend URL for your deployed app
@@ -209,7 +208,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             imagePreviewContainer.removeChild(imageElement);
             imagePreviewContainer.removeChild(deleteButton);
             selectedImages = selectedImages.filter((img) => img !== imageElement);
-            galleryImages = galleryImages.filter((img) => img.src !== imageElement.src);
             imagesToDelete.push(imageElement.src); // Add to the delete list
           });
 
@@ -220,7 +218,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           imagePreviewContainer.appendChild(imgContainer);
 
           selectedImages.push(imageElement); // Keep track of selected images for form submission
-          galleryImages.push(imageElement); // Keep track for gallery display
 
           const option = document.createElement('option');
           option.value = index;
