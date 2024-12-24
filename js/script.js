@@ -10,12 +10,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const imageInput = document.getElementById('images');
   const imagePreviewContainer = document.getElementById('image-preview-container');
   const coverPhotoSelect = document.getElementById('cover-photo');
-  let selectedImages = [];
-  let imagesToDelete = [];
-  let galleryImages = [];
+  let selectedImages = []; // To track selected images for preview and form submission
+  let imagesToDelete = [];  // To keep track of images to delete before saving
+  let galleryImages = []; // To keep track of images for the gallery display
 
-  const BACKEND_URL = 'https://news-electric.onrender.com';
+  // Backend URL pointing to your Render app
+  const BACKEND_URL = 'https://news-electric.onrender.com'; // Ensure this is the correct backend URL for your deployed app
 
+  // Show feedback messages
   const showFeedback = (message, isSuccess = true) => {
     if (feedbackMessage && feedbackSection) {
       feedbackMessage.textContent = message;
@@ -25,9 +27,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  // Fetch data from API
   const fetchData = async (url, options = {}) => {
     try {
-      const response = await fetch(`${BACKEND_URL}${url}`, options);
+      const response = await fetch(`${BACKEND_URL}${url}`, options); // Fetching from the Render app URL
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (err) {
@@ -36,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  // Admin authentication
   if (adminLink) {
     adminLink.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -45,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const result = await fetchData('/api/admin-auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password }),
+          body: JSON.stringify({ password } ),
         });
         if (result.success) {
           window.location.href = '/upload';
@@ -58,13 +62,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Load services for selection and display
   const loadServices = async () => {
     try {
       const data = await fetchData('/api/services', { cache: 'no-store' });
 
+      // Ensure services container and dropdown are cleared before populating
       if (servicesContainer) servicesContainer.innerHTML = '';
       if (serviceSelect) serviceSelect.innerHTML = '<option value="">Add New Service</option>';
 
+      // Populate the services container and the service select dropdown
       data.services.forEach((service) => {
         if (servicesContainer) {
           const serviceItem = document.createElement('div');
@@ -78,6 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 : '<p>No image available</p>'
             }
           `;
+          // Clicking a service loads its details and shows all images (no delete functionality or names)
           serviceItem.addEventListener('click', () => {
             const imagesHTML = service.images
               .map((image) => `
@@ -92,14 +100,16 @@ document.addEventListener('DOMContentLoaded', async () => {
               <button id="back-to-services-btn">Back to Services</button>
             `;
 
+            // Handle "Back to Services" button click
             const backToServicesBtn = document.getElementById('back-to-services-btn');
             backToServicesBtn.addEventListener('click', () => {
-              window.location.href = '/services';
+              window.location.href = '/services'; // Navigate to the services page
             });
           });
           servicesContainer.appendChild(serviceItem);
         }
 
+        // Populate service selection dropdown
         if (serviceSelect) {
           const option = document.createElement('option');
           option.value = service.id;
@@ -115,9 +125,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  // Populate service form for editing
   const populateServiceForm = async (id) => {
     const nameInput = document.getElementById('name');
     const descriptionInput = document.getElementById('description');
+    const coverPhotoSelect = document.getElementById('cover-photo');
 
     try {
       const data = await fetchData('/api/services', { cache: 'no-store' });
@@ -138,6 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               .join('')
           : '';
 
+        // Prepopulate the cover photo dropdown
         coverPhotoSelect.innerHTML = '<option value="">Select a cover photo</option>';
         service.images.forEach((image, index) => {
           const option = document.createElement('option');
@@ -146,12 +159,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           coverPhotoSelect.appendChild(option);
         });
 
+        // Handle deleting the image
         document.querySelectorAll('.delete-img').forEach((button) => {
           button.addEventListener('click', async (e) => {
             const imageElement = e.target.closest('.image-preview');
-            const imageUrl = imageElement.querySelector('img').src;
-            imageElement.remove();
-            imagesToDelete.push(imageUrl);
+            const imageUrl = imageElement.querySelector('img').src; // Get the image URL
+            imageElement.remove(); // Remove image from UI
+            imagesToDelete.push(imageUrl); // Add to the delete list
           });
         });
       }
@@ -160,12 +174,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  // Handle form population and reset when service is selected
   if (serviceSelect) {
     serviceSelect.addEventListener('change', (e) => {
       const selectedServiceId = e.target.value;
       if (selectedServiceId) {
         populateServiceForm(selectedServiceId);
       } else {
+        // Reset form if no service is selected
         form.reset();
         document.getElementById('image-preview-container').innerHTML = '';
         coverPhotoSelect.innerHTML = '<option value="">Select a cover photo</option>';
@@ -173,56 +189,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Handle image previews and cover photo selection
   if (imageInput) {
     imageInput.addEventListener('change', (e) => {
       const files = e.target.files;
-      imagePreviewContainer.innerHTML = '';
+      // We will add the new files to the existing previews instead of replacing them
       Array.from(files).forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = function (event) {
+          const imageElement = document.createElement('img');
+          imageElement.src = event.target.result;
+          imageElement.style.maxWidth = '100px';
+          imageElement.style.marginRight = '10px';
+
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = 'X';
+          deleteButton.classList.add('delete-img');
+          deleteButton.addEventListener('click', () => {
+            imagePreviewContainer.removeChild(imageElement);
+            imagePreviewContainer.removeChild(deleteButton);
+            selectedImages = selectedImages.filter((img) => img !== imageElement);
+            galleryImages = galleryImages.filter((img) => img.src !== imageElement.src);
+            imagesToDelete.push(imageElement.src); // Add to the delete list
+          });
+
           const imgContainer = document.createElement('div');
           imgContainer.classList.add('image-preview');
-          imgContainer.innerHTML = `
-            <img src="${event.target.result}" alt="Preview" style="max-width: 100px; margin-right: 10px;">
-            <button class="delete-img">X</button>
-          `;
+          imgContainer.appendChild(imageElement);
+          imgContainer.appendChild(deleteButton);
           imagePreviewContainer.appendChild(imgContainer);
-          imgContainer.querySelector('.delete-img').addEventListener('click', () => {
-            imgContainer.remove();
-            selectedImages = selectedImages.filter((img) => img !== file);
-          });
+
+          selectedImages.push(imageElement); // Keep track of selected images for form submission
+          galleryImages.push(imageElement); // Keep track for gallery display
+
+          const option = document.createElement('option');
+          option.value = index;
+          option.textContent = `Image ${index + 1}`;
+          coverPhotoSelect.appendChild(option);
         };
         reader.readAsDataURL(file);
       });
     });
   }
 
+  // Handle form submission for adding/updating service
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const formData = new FormData(form);
       const coverPhotoIndex = coverPhotoSelect.value;
-      formData.append('cover-photo', coverPhotoIndex);
+      formData.append('cover-photo', coverPhotoIndex); // Add the selected cover photo to the form data
+
+      selectedImages.forEach((img) => formData.append('images', img.src)); // Add selected images to form data
+      imagesToDelete.forEach((img) => formData.append('imagesToDelete', img)); // Add images to delete list
 
       const id = serviceSelect.value;
       const method = id ? 'PUT' : 'POST';
       const endpoint = id ? `/api/admin/update-service/${id}` : `/api/admin/add-service`;
 
       try {
-        const result = await fetch(`${BACKEND_URL}${endpoint}`, {
-          method,
-          body: formData,
-        });
-        const data = await result.json();
-        if (data.success) {
-          showFeedback(data.message || 'Service successfully managed!');
+        const result = await fetchData(endpoint, { method, body: formData });
+        if (result.success) {
+          showFeedback(result.message || 'Service successfully managed!');
           await loadServices();
           form.reset();
-          imagePreviewContainer.innerHTML = '';
-          imagesToDelete = [];
+          document.getElementById('image-preview-container').innerHTML = '';
+          imagesToDelete = []; // Reset the delete list
         } else {
-          showFeedback(data.error || 'Failed to manage service.', false);
+          showFeedback(result.error || 'Failed to manage service.', false);
         }
       } catch (err) {
         showFeedback('An error occurred while managing the service.', false);
@@ -230,6 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Delete selected service
   if (deleteServiceButton) {
     deleteServiceButton.addEventListener('click', async () => {
       const id = serviceSelect.value;
@@ -237,13 +273,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (confirm('Are you sure you want to delete this service?')) {
         try {
-          const result = await fetch(`${BACKEND_URL}/api/admin/delete-service/${id}`, { method: 'DELETE' });
-          const data = await result.json();
-          if (data.success) {
-            showFeedback(data.message || 'Service deleted successfully!');
+          const result = await fetchData(`/api/admin/delete-service/${id}`, { method: 'DELETE' });
+          if (result.success) {
+            showFeedback(result.message || 'Service deleted successfully!');
             await loadServices();
           } else {
-            showFeedback(data.error || 'Failed to delete service.', false);
+            showFeedback(result.error || 'Failed to delete service.', false);
           }
         } catch (err) {
           showFeedback('An error occurred while deleting the service.', false);
@@ -252,6 +287,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Return to homepage
   if (returnHomeButton) {
     returnHomeButton.addEventListener('click', (e) => {
       e.preventDefault();
@@ -259,5 +295,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  await loadServices();
+  await loadServices(); // Initially load all services when the page loads
 });
