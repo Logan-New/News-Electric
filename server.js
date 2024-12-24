@@ -12,6 +12,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'All4Jesus';
 
+// Debugging: Log environment variables and server initialization
+console.log('Starting server with the following configuration:');
+console.log(`PORT: ${PORT}`);
+console.log(`ADMIN_PASSWORD: ${ADMIN_PASSWORD ? '*****' : 'Not Set'}`);
+
 // Constants for directory paths
 const DATA_DIR = path.join(__dirname, 'data');
 const IMAGES_DIR = path.join(__dirname, 'images');
@@ -85,25 +90,31 @@ const upload = multer({
 
 // Routes for serving HTML pages
 app.get('/index', (req, res) => {
+  console.log('GET request to /');
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 app.get('/about', (req, res) => {
+  console.log('GET request to /about');
   res.sendFile(path.join(__dirname, 'about.html'));
 });
 app.get('/services', (req, res) => {
+  console.log('GET request to /services');
   res.sendFile(path.join(__dirname, 'services.html'));
 });
 app.get('/upload', (req, res) => {
+  console.log('GET request to /upload');
   res.sendFile(path.join(__dirname, 'upload.html'));
 });
 
 // Health Check Endpoint
 app.get('/healthz', (req, res) => {
+  console.log('GET request to /healthz');
   res.status(200).send('OK');
 });
 
 // Admin authentication route
 app.post('/api/admin-auth', (req, res) => {
+  console.log('POST request to /api/admin-auth');
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
     return res.json({ success: true, redirect: '/upload' });
@@ -113,12 +124,14 @@ app.post('/api/admin-auth', (req, res) => {
 
 // Route to serve services.json
 app.get('/api/services', async (req, res) => {
+  console.log('GET request to /api/services');
   try {
     const servicesPath = path.join(DATA_DIR, 'services.json');
     const servicesData = await fs.readFile(servicesPath, 'utf-8');
     res.setHeader('Cache-Control', 'no-store');
     res.json(JSON.parse(servicesData));
   } catch (err) {
+    console.error('Error reading services.json:', err);
     res.status(500).json({ error: 'Failed to retrieve services data.' });
   }
 });
@@ -132,6 +145,7 @@ app.post(
     body('description').isLength({ min: 10 }).withMessage('Description must be at least 10 characters long'),
   ],
   async (req, res) => {
+    console.log('POST request to /api/admin/add-service');
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -139,90 +153,58 @@ app.post(
 
     const { name, description, coverPhoto } = req.body;
 
+    // Handle case where no files are uploaded or invalid file types
     if (!req.files || req.files.length === 0) {
+      console.error('No images uploaded or invalid file types.');
       return res.status(400).json({ error: 'No images uploaded or invalid file types.' });
     }
 
-    const images = req.files.map((file) => `/images/${file.filename}`);
-    const coverPhotoPath = images.includes(`/images/${coverPhoto}`) ? `/images/${coverPhoto}` : images[0];
-
-    const newService = {
-      id: Date.now().toString(),
-      name,
-      description,
-      images,
-      coverPhoto: coverPhotoPath,
-    };
+    // Number the images left-to-right for the admin panel
+    const images = req.files.map((file, index) => ({
+      path: `/images/${file.filename}`,
+      name: `Image ${index + 1}`, // Numbering for admin panel
+    }));
 
     try {
       const servicesPath = path.join(DATA_DIR, 'services.json');
-      const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
+      let servicesData = { services: [] };
+      try {
+        servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
+      } catch {
+        console.log('services.json is missing or empty.');
+      }
+
+      // Validate cover photo selection
+      const selectedCoverPhoto = images.find((img) => img.path === `/images/${coverPhoto}`);
+      const coverPhotoPath = selectedCoverPhoto ? selectedCoverPhoto.path : images[0].path;
+
+      const newService = {
+        id: Date.now().toString(),
+        name,
+        description,
+        images: images.map((img) => img.path), // Store paths only
+        coverPhoto: coverPhotoPath,
+      };
+
       servicesData.services.push(newService);
       await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
-      res.json({ success: true, message: 'Service added successfully!', newService });
+
+      // Return response with images numbered for the admin panel
+      res.json({
+        success: true,
+        message: 'Service added successfully!',
+        images: images.map((img, index) => ({ index: index + 1, path: img.path })), // Numbered response
+      });
     } catch (err) {
-      res.status(500).json({ error: 'Failed to save the service.' });
+      console.error('Error saving new service:', err);
+      res.status(500).json({ error: 'Failed to save new service.' });
     }
   }
 );
-
-// Update an existing service
-app.put(
-  '/api/admin/update-service/:id',
-  upload.array('images', 40),
-  async (req, res) => {
-    const { id } = req.params;
-    const { name, description, coverPhoto } = req.body;
-
-    try {
-      const servicesPath = path.join(DATA_DIR, 'services.json');
-      const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
-      const service = servicesData.services.find((s) => s.id === id);
-
-      if (!service) {
-        return res.status(404).json({ error: 'Service not found.' });
-      }
-
-      service.name = name || service.name;
-      service.description = description || service.description;
-
-      if (req.files && req.files.length > 0) {
-        const newImages = req.files.map((file) => `/images/${file.filename}`);
-        service.images.push(...newImages);
-      }
-
-      service.coverPhoto = coverPhoto || service.images[0];
-
-      await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
-      res.json({ success: true, message: 'Service updated successfully!', service });
-    } catch (err) {
-      res.status(500).json({ error: 'Failed to update the service.' });
-    }
-  }
-);
-
-// Delete a service
-app.delete('/api/admin/delete-service/:id', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const servicesPath = path.join(DATA_DIR, 'services.json');
-    const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
-    const updatedServices = servicesData.services.filter((service) => service.id !== id);
-
-    if (updatedServices.length === servicesData.services.length) {
-      return res.status(404).json({ error: 'Service not found.' });
-    }
-
-    await fs.writeFile(servicesPath, JSON.stringify({ services: updatedServices }, null, 2));
-    res.json({ success: true, message: 'Service deleted successfully!' });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to delete the service.' });
-  }
-});
 
 // Global error handler
 app.use((err, req, res, next) => {
+  console.error(`Error on ${req.method} ${req.url}:`, err.stack);
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
