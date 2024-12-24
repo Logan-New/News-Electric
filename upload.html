@@ -33,7 +33,7 @@
       position: absolute;
       top: 5px;
       right: 5px;
-      background-color: rgba(0, 0, 0, 0.6);
+      background-color: rgba(0,0,0,0.6);
       color: #fff;
       border: none;
       border-radius: 50%;
@@ -41,7 +41,7 @@
       cursor: pointer;
     }
     .image-preview button:hover {
-      background-color: rgba(0, 0, 0, 0.8);
+      background-color: rgba(0,0,0,0.8);
     }
   </style>
 </head>
@@ -93,51 +93,6 @@
     <p>&copy; 2024 New's Electric LLC</p>
   </footer>
 
-  <!-- Inline JavaScript with Nonce -->
-  <script nonce="{{nonce}}">
-    document.addEventListener('DOMContentLoaded', () => {
-      const imagesInput = document.getElementById('images');
-      const imagePreviewContainer = document.getElementById('image-preview-container');
-      const coverPhotoSelect = document.getElementById('cover-photo');
-
-      // Preview selected images and populate cover photo options
-      imagesInput.addEventListener('change', (event) => {
-        const files = event.target.files;
-        imagePreviewContainer.innerHTML = ''; // Clear previous previews
-        coverPhotoSelect.innerHTML = '<option value="">Select a cover photo</option>'; // Reset cover photo dropdown
-
-        Array.from(files).forEach((file, index) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            // Create image preview
-            const imgElement = document.createElement('img');
-            imgElement.src = reader.result;
-
-            const previewContainer = document.createElement('div');
-            previewContainer.className = 'image-preview';
-            previewContainer.appendChild(imgElement);
-
-            // Add delete button
-            const deleteButton = document.createElement('button');
-            deleteButton.innerText = 'X';
-            deleteButton.addEventListener('click', () => {
-              previewContainer.remove(); // Remove preview
-              const optionToRemove = coverPhotoSelect.querySelector(`option[value="${file.name}"]`);
-              if (optionToRemove) optionToRemove.remove(); // Remove corresponding dropdown option
-            });
-            previewContainer.appendChild(deleteButton);
-            imagePreviewContainer.appendChild(previewContainer);
-
-            // Add to cover photo dropdown
-            const option = document.createElement('option');
-            option.value = file.name;
-            option.textContent = `Image ${index + 1}`;
-            coverPhotoSelect.appendChild(option);
-          };
-          reader.readAsDataURL(file);
-        });
-      });
-    });
-  </script>
+  <script src="/js/script.js"></script>
 </body>
 </html>
