@@ -23,6 +23,7 @@
 
   <main>
     <section id="services-container" aria-labelledby="services-heading">
+      <h2 id="services-heading">Explore Our Services</h2>
       <!-- Services will be dynamically loaded here -->
     </section>
   </main>
@@ -33,13 +34,14 @@
   </footer>
 
   <!-- Modal for Image Slideshow -->
-  <div id="image-modal" class="modal hidden">
+  <div id="image-modal" class="modal hidden" role="dialog" aria-labelledby="modal-heading" aria-hidden="true">
     <div class="modal-content">
-      <span id="close-modal" class="close">&times;</span>
+      <button id="close-modal" class="close" aria-label="Close Modal">&times;</button>
       <div id="slideshow-container">
-        <button id="prev-slide" class="slide-control">&lt;</button>
-        <img id="modal-image" src="" alt="Service Image">
-        <button id="next-slide" class="slide-control">&gt;</button>
+        <button id="prev-slide" class="slide-control" aria-label="Previous Image">&lt;</button>
+        <img id="modal-image" src="" alt="Service Image" aria-describedby="image-description">
+        <button id="next-slide" class="slide-control" aria-label="Next Image">&gt;</button>
+        <p id="image-description" class="visually-hidden">Current service image in slideshow.</p>
       </div>
     </div>
   </div>

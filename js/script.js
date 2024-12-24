@@ -58,53 +58,49 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const setupModal = () => {
-    const modal = document.createElement('div');
-    modal.id = 'image-modal';
-    modal.classList.add('modal', 'hidden');
-    modal.innerHTML = `
-      <div class="modal-content">
-        <span id="close-modal" class="close">&times;</span>
-        <div class="slideshow-container">
-          <button id="prev-slide" class="slide-control">&lt;</button>
-          <img id="modal-image" src="" alt="Service Image">
-          <button id="next-slide" class="slide-control">&gt;</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
+    const modal = document.getElementById('image-modal');
+    const modalImage = document.getElementById('modal-image');
+    const prevSlide = document.getElementById('prev-slide');
+    const nextSlide = document.getElementById('next-slide');
+    const closeModal = document.getElementById('close-modal');
+    let currentImages = [];
+    let currentIndex = 0;
 
-    const closeModal = () => {
-      modal.classList.add('hidden');
+    const updateImage = () => {
+      modalImage.src = currentImages[currentIndex];
     };
 
-    document.getElementById('close-modal').addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
+    prevSlide.addEventListener('click', () => {
+      currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
+      updateImage();
     });
 
-    return modal;
+    nextSlide.addEventListener('click', () => {
+      currentIndex = (currentIndex + 1) % currentImages.length;
+      updateImage();
+    });
+
+    closeModal.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.add('hidden');
+      }
+    });
+
+    const showModal = (images, startIndex = 0) => {
+      currentImages = images;
+      currentIndex = startIndex;
+      updateImage();
+      modal.classList.remove('hidden');
+    };
+
+    return showModal;
   };
 
-  const modal = setupModal();
-  let currentImageIndex = 0;
-  let currentImages = [];
-
-  const showModal = (images, startIndex = 0) => {
-    currentImages = images;
-    currentImageIndex = startIndex;
-    document.getElementById('modal-image').src = currentImages[currentImageIndex];
-    modal.classList.remove('hidden');
-  };
-
-  document.getElementById('prev-slide').addEventListener('click', () => {
-    currentImageIndex = (currentImageIndex - 1 + currentImages.length) % currentImages.length;
-    document.getElementById('modal-image').src = currentImages[currentImageIndex];
-  });
-
-  document.getElementById('next-slide').addEventListener('click', () => {
-    currentImageIndex = (currentImageIndex + 1) % currentImages.length;
-    document.getElementById('modal-image').src = currentImages[currentImageIndex];
-  });
+  const showModal = setupModal();
 
   const loadServices = async () => {
     try {
@@ -154,7 +150,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const populateServiceForm = async (id) => {
     const nameInput = document.getElementById('name');
     const descriptionInput = document.getElementById('description');
-    const coverPhotoSelect = document.getElementById('cover-photo');
 
     try {
       const data = await fetchData('/api/services', { cache: 'no-store' });
