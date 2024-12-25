@@ -63,11 +63,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     modal.innerHTML = `
       <div class="modal-content">
         <button id="close-modal" class="close">&times;</button>
-        <img id="modal-image" class="modal-image" src="" alt="Service Image">
-        <div class="modal-controls">
-          <button id="prev-slide" class="slide-control">&lt;</button>
-          <button id="next-slide" class="slide-control">&gt;</button>
+        <div id="slideshow-container">
+          <button id="prev-slide" class="slide-control" aria-label="Previous Image">&lt;</button>
+          <img id="modal-image" class="modal-image" src="" alt="Service Image" aria-describedby="image-description">
+          <button id="next-slide" class="slide-control" aria-label="Next Image">&gt;</button>
         </div>
+        <p id="image-description" class="visually-hidden">Current service image in slideshow.</p>
       </div>
     `;
     document.body.appendChild(modal);
@@ -107,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentImages = images;
       currentIndex = startIndex;
       updateImage();
-      modal.classList.add('show');  // Ensures modal is visible by adding the 'show' class
+      modal.classList.remove('hidden');  // Ensure modal is visible by removing 'hidden' class
     };
 
     return showModal;
@@ -181,7 +182,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <label>Image ${index + 1}</label>
                   </div>`
               )
-              .join('')
+              .join('') // Dynamically create preview images
           : '';
 
         coverPhotoSelect.innerHTML = '<option value="">Select a cover photo</option>';
@@ -197,7 +198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const imageElement = e.target.closest('.image-preview');
             const imageUrl = imageElement.querySelector('img').src;
             imageElement.remove();
-            imagesToDelete.push(imageUrl);
+            imagesToDelete.push(imageUrl); // Mark for deletion
           });
         });
       }
