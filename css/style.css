@@ -176,12 +176,12 @@ form button:hover {
   color: #002244; /* Navy Blue text */
 }
 
-/* Top-right image on every page */
+/* Top-right image */
 #top-right-image-container {
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 1000;
+  z-index: 1000; /* Keep it above most elements */
   background: rgba(255, 255, 255, 0.9); /* Light, semi-transparent background */
   padding: 15px;
   border-radius: 8px;
@@ -190,12 +190,34 @@ form button:hover {
 }
 
 #top-right-image {
-  width: 280px; /* Proportional size */
+  width: 280px; /* Default size for larger screens */
   height: auto;
   border: none; /* Remove border for cleaner look */
   border-radius: 4px; /* Slight rounding */
 }
 
+/* Ensure navigation links have a higher stacking order */
+nav a {
+  position: relative;
+  z-index: 2000; /* Higher than #top-right-image-container */
+}
+
+/* Responsive Design for Mobile Screens */
+@media (max-width: 768px) {
+  #top-right-image-container {
+    top: auto; /* Reposition below header */
+    right: auto;
+    bottom: 20px; /* Place at the bottom */
+    left: 20px;
+    width: 80%; /* Adjust width to fit smaller screens */
+    padding: 10px; /* Reduce padding */
+    z-index: 100; /* Lower priority */
+  }
+
+  #top-right-image {
+    width: 100%; /* Scale to fit the new container */
+  }
+}
 /* Business card image in the footer */
 #business-card {
   width: 380px; /* Adjust size */
