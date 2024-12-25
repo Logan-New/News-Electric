@@ -6,10 +6,10 @@ body, h1, h2, h3, p, ul, ol, a, input, button, textarea, select {
 }
 
 body {
-  font-family: 'Roboto', sans-serif; /* Clean and modern font */
+  font-family: 'Cinzel', serif; /* Classic font style */
   font-size: 16px;
   line-height: 1.6;
-  color: #333333; /* Dark gray for text */
+  color: #002244; /* Navy Blue for text color */
   background-color: #F9F9F9; /* Light gray background for contrast */
   margin: 0;
 }
@@ -26,6 +26,9 @@ header {
 header h1 {
   font-size: 2.4rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 0 #CCCCCC; /* Subtle shadow effect */
   margin-bottom: 5px;
 }
 
@@ -39,11 +42,12 @@ nav {
 }
 
 nav a {
+  font-family: 'Cinzel', serif;
   color: #FFFFFF; /* White text */
   text-decoration: none;
   margin-right: 20px;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 400;
   padding: 5px 10px;
   border-radius: 4px;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -67,6 +71,7 @@ footer {
 }
 
 footer a {
+  font-family: 'Cinzel', serif;
   color: #FFCC00; /* Accent Yellow */
   text-decoration: none;
   transition: color 0.3s ease;
@@ -96,7 +101,6 @@ main {
   padding: 20px;
   margin-bottom: 20px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Clean shadow */
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .service-item img {
@@ -110,13 +114,11 @@ main {
 
 .service-item h3 {
   font-size: 1.8rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  text-transform: uppercase;
   color: #002244; /* Navy Blue text */
   margin-bottom: 10px;
-}
-
-.service-item:hover {
-  transform: scale(1.02);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15); /* Enhanced shadow */
 }
 
 /* Forms */
@@ -144,6 +146,7 @@ form input, form textarea, form select, form button {
   border: 1px solid #CCCCCC; /* Light gray border */
   border-radius: 4px;
   font-size: 1rem;
+  font-family: 'Cinzel', serif;
 }
 
 form input:focus, form textarea:focus, form select:focus {
@@ -177,7 +180,6 @@ form button:hover {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Clean shadow for depth */
   border: 1px solid #E0E0E0; /* Light gray border */
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 #top-right-image {
@@ -185,12 +187,6 @@ form button:hover {
   height: auto;
   border: none; /* Remove border for cleaner look */
   border-radius: 4px; /* Slight rounding */
-  transition: transform 0.3s ease;
-}
-
-#top-right-image-container:hover {
-  transform: scale(1.02); /* Subtle zoom on hover */
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); /* Deeper shadow effect on hover */
 }
 
 /* Business card image in the footer */
@@ -203,12 +199,6 @@ form button:hover {
   border: 1px solid #E0E0E0; /* Light gray border */
   border-radius: 8px; /* Subtle rounding */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Clean and soft shadow */
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-#business-card:hover {
-  transform: translateY(-3px); /* Slight lift on hover */
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* Elevated shadow */
 }
 
 /* Responsive Design */
