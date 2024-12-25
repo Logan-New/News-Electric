@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentImages = images;
       currentIndex = startIndex;
       updateImage();
-      modal.classList.remove('hidden');
+      modal.classList.add('show');  // Ensures modal is visible by adding the 'show' class
     };
 
     return showModal;
