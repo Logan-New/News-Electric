@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         imagePreviewContainer.innerHTML = service.images
           ? service.images
               .map(
-                (image, index) => `
+                (image, index) => ` 
                   <div class="image-preview" data-index="${index}" data-src="${image}">
                     <img src="${image}" alt="${service.name}">
                     <button class="delete-img">X</button>

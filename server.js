@@ -12,18 +12,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'All4Jesus';
 
-// Debugging: Log environment variables and server initialization
 console.log('Starting server with the following configuration:');
 console.log(`PORT: ${PORT}`);
 console.log(`ADMIN_PASSWORD: ${ADMIN_PASSWORD ? '*****' : 'Not Set'}`);
 
-// Constants for directory paths
 const DATA_DIR = path.join(__dirname, 'data');
 const IMAGES_DIR = path.join(__dirname, 'images');
 const CSS_DIR = path.join(__dirname, 'css');
 const JS_DIR = path.join(__dirname, 'js');
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
@@ -36,7 +33,7 @@ app.use('/css', express.static(CSS_DIR));
 app.use('/js', express.static(JS_DIR));
 app.use('/images', express.static(IMAGES_DIR));
 
-// Helper function to ensure required files exist
+// Ensure required files exist
 const ensureFileExists = async (filePath, defaultContent = '{}') => {
   try {
     await fs.access(filePath);
@@ -47,7 +44,6 @@ const ensureFileExists = async (filePath, defaultContent = '{}') => {
   }
 };
 
-// Ensure required directories and files
 const initializeFiles = async () => {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
@@ -92,7 +88,6 @@ const upload = multer({
 
 // Routes for serving HTML pages
 app.use(express.static(__dirname));
-
 app.get('/index', (req, res) => {
   console.log('GET request to /');
   res.sendFile(path.join(__dirname, 'index.html'));
