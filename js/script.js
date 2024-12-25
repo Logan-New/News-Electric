@@ -200,6 +200,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const imageUrl = imageElement.querySelector('img').src;
             imageElement.remove();
             imagesToDelete.push(imageUrl); // Mark for deletion
+
+            // Display the confirmation message for image deletion
+            alert("Image successfully deleted!");
           });
         });
       }
