@@ -211,6 +211,40 @@ app.delete('/api/admin/delete-service/:id', async (req, res) => {
   }
 });
 
+// Update an existing service by ID
+app.put('/api/admin/update-service/:id', upload.array('images', 40), async (req, res) => {
+  const { id } = req.params;
+  const { name, description, coverPhoto } = req.body;
+  const images = req.files.map((file) => `/images/${file.filename}`);
+
+  console.log('PUT request to /api/admin/update-service with ID:', id);
+
+  const servicesPath = path.join(DATA_DIR, 'services.json');
+  try {
+    // Read existing services
+    const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
+    const serviceIndex = servicesData.services.findIndex((service) => service.id === id);
+
+    if (serviceIndex === -1) {
+      return res.status(404).json({ error: 'Service not found.' });
+    }
+
+    // Update the service
+    const service = servicesData.services[serviceIndex];
+    if (name) service.name = name;
+    if (description) service.description = description;
+    if (images.length > 0) service.images = service.images.concat(images); // Add new images
+    if (coverPhoto) service.coverPhoto = `/images/${coverPhoto}`;
+
+    // Save updates
+    await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
+    res.json({ success: true, message: 'Service updated successfully!', service });
+  } catch (err) {
+    console.error('Error updating service:', err);
+    res.status(500).json({ error: 'Failed to update service.' });
+  }
+});
+
 // Delete an image from the service
 app.delete('/api/admin/delete-image', async (req, res) => {
   const { serviceId, imagePath } = req.body;
