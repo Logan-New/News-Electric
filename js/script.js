@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Modal setup and functionality
   const setupModal = () => {
     const modal = document.createElement('div');
     modal.id = 'image-modal';
