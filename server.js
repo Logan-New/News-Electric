@@ -16,11 +16,9 @@ console.log('Starting server with the following configuration:');
 console.log(`PORT: ${PORT}`);
 console.log(`ADMIN_PASSWORD: ${ADMIN_PASSWORD ? '*****' : 'Not Set'}`);
 
-const DATA_DIR = path.join(__dirname, 'data');
-const IMAGES_DIR = path.join(__dirname, 'images');
-const CSS_DIR = path.join(__dirname, 'css');
-const JS_DIR = path.join(__dirname, 'js');
+const DATA_DIR = path.join(__dirname, 'data'); // Only the data directory is needed now
 
+// Middleware setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
@@ -29,9 +27,6 @@ app.use(cors({
 }));
 app.use(helmet());
 app.use(morgan('combined')); // Logging middleware
-app.use('/css', express.static(CSS_DIR));
-app.use('/js', express.static(JS_DIR));
-app.use('/images', express.static(IMAGES_DIR));
 
 // Ensure required files exist
 const ensureFileExists = async (filePath, defaultContent = '{}') => {
@@ -56,26 +51,9 @@ const initializeFiles = async () => {
 };
 initializeFiles();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    try {
-      await fs.mkdir(IMAGES_DIR, { recursive: true });
-      cb(null, IMAGES_DIR);
-    } catch (err) {
-      cb(err);
-    }
-  },
-  filename: (req, file, cb) => {
-    const timestamp = Date.now();
-    const cleanFilename = file.originalname.replace(/\s+/g, '_');
-    cb(null, `${timestamp}-${cleanFilename}`);
-  },
-});
-
+// Configure multer for file uploads (images will only be temporarily handled)
 const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 }, // max file size 5MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (!allowedTypes.includes(file.mimetype)) {
@@ -83,11 +61,11 @@ const upload = multer({
     } else {
       cb(null, true);
     }
-  },
+  }
 });
 
 // Routes for serving HTML pages
-app.use(express.static(__dirname));
+app.use(express.static(__dirname));  // Serving static files
 app.get('/index', (req, res) => {
   console.log('GET request to /');
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -151,7 +129,8 @@ app.post(
     }
 
     const { name, description, coverPhoto } = req.body;
-    const images = req.files.map((file) => `/images/${file.filename}`);
+    const images = req.files.map((file) => file.filename);  // Save only the filenames of uploaded images
+
     if (images.length === 0) {
       return res.status(400).json({ error: 'No images uploaded' });
     }
@@ -169,8 +148,8 @@ app.post(
         id: Date.now().toString(),
         name,
         description,
-        images,
-        coverPhoto: coverPhoto ? `/images/${coverPhoto}` : images[0],
+        images,  // Only store filenames of images
+        coverPhoto: coverPhoto || images[0],  // Default to the first uploaded image as cover photo
       };
 
       servicesData.services.push(newService);
@@ -210,13 +189,12 @@ app.delete('/api/admin/delete-service/:id', async (req, res) => {
 app.put('/api/admin/update-service/:id', upload.array('images', 40), async (req, res) => {
   const { id } = req.params;
   const { name, description, coverPhoto } = req.body;
-  const images = req.files.map((file) => `/images/${file.filename}`);
+  const images = req.files.map((file) => file.filename);  // Save only the filenames of uploaded images
 
   console.log('PUT request to /api/admin/update-service with ID:', id);
 
   const servicesPath = path.join(DATA_DIR, 'services.json');
   try {
-    // Read existing services
     const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
     const serviceIndex = servicesData.services.findIndex((service) => service.id === id);
 
@@ -224,14 +202,12 @@ app.put('/api/admin/update-service/:id', upload.array('images', 40), async (req,
       return res.status(404).json({ error: 'Service not found.' });
     }
 
-    // Update the service
     const service = servicesData.services[serviceIndex];
     if (name) service.name = name;
     if (description) service.description = description;
     if (images.length > 0) service.images = service.images.concat(images); // Add new images
-    if (coverPhoto) service.coverPhoto = `/images/${coverPhoto}`;
+    if (coverPhoto) service.coverPhoto = coverPhoto;
 
-    // Save updates
     await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
     res.json({ success: true, message: 'Service updated successfully!', service });
   } catch (err) {
@@ -242,11 +218,10 @@ app.put('/api/admin/update-service/:id', upload.array('images', 40), async (req,
 
 // Delete an image from the service
 app.delete('/api/admin/delete-image', async (req, res) => {
-  const { serviceId, imagePath } = req.body;
+  const { serviceId, imageFilename } = req.body;  // Image filename is being tracked
   const servicesPath = path.join(DATA_DIR, 'services.json');
-  
+
   try {
-    // Read the services data
     const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
     const service = servicesData.services.find((s) => s.id === serviceId);
 
@@ -255,13 +230,8 @@ app.delete('/api/admin/delete-image', async (req, res) => {
     }
 
     // Remove image from service
-    service.images = service.images.filter((img) => img !== imagePath);
+    service.images = service.images.filter((img) => img !== imageFilename);
 
-    // Delete the image file from the server
-    const imageFilePath = path.join(__dirname, imagePath);
-    await fs.unlink(imageFilePath);  // Delete the file from the file system
-
-    // Save the updated services data
     await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
 
     res.json({ success: true, message: 'Image deleted successfully!' });

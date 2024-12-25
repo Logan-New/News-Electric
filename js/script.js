@@ -201,7 +201,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             imageElement.remove();
             imagesToDelete.push(imageUrl); // Mark for deletion
 
-            // Display the confirmation message for image deletion
+            // Dynamically update the cover photo selection options after deletion
+            coverPhotoSelect.innerHTML = '<option value="">Select a cover photo</option>';
+            service.images.filter((img) => !imagesToDelete.includes(img)).forEach((image, index) => {
+              const option = document.createElement('option');
+              option.value = index;
+              option.textContent = `Image ${index + 1}`;
+              coverPhotoSelect.appendChild(option);
+            });
+
             alert("Image successfully deleted!");
           });
         });
