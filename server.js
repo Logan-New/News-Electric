@@ -17,7 +17,8 @@ console.log(`PORT: ${PORT}`);
 console.log(`ADMIN_PASSWORD: ${ADMIN_PASSWORD ? '*****' : 'Not Set'}`);
 
 // Directory paths
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = path.join(__dirname, 'data'); // Ensure this points to the correct directory
+const SERVICES_FILE = path.join(DATA_DIR, 'services.json');  // Full path to services.json file
 const IMAGES_DIR = path.join(__dirname, 'images');
 const CSS_DIR = path.join(__dirname, 'css');
 const JS_DIR = path.join(__dirname, 'js');
@@ -26,7 +27,7 @@ const JS_DIR = path.join(__dirname, 'js');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Updated CORS configuration
+// CORS configuration
 app.use(cors({
   origin: ['https://www.newselectric.com', 'https://logan-new.github.io'], // Allowed origins
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed methods
@@ -44,7 +45,7 @@ app.use('/js', express.static(JS_DIR));
 app.use('/images', express.static(IMAGES_DIR));
 app.use(express.static(__dirname));
 
-// Updated CSP middleware
+// Content Security Policy
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
@@ -64,10 +65,11 @@ const ensureFileExists = async (filePath, defaultContent = '{}') => {
   }
 };
 
+// Initialize files (services.json)
 const initializeFiles = async () => {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
-    await ensureFileExists(path.join(DATA_DIR, 'services.json'), JSON.stringify({ services: [] }, null, 2));
+    await ensureFileExists(SERVICES_FILE, JSON.stringify({ services: [] }, null, 2)); // Creating services.json if it doesn't exist
     console.log('Initialization of directories and files completed.');
   } catch (err) {
     console.error('Critical error during initialization:', err);
@@ -108,18 +110,22 @@ const upload = multer({
 
 // Routes for serving HTML pages
 app.use(express.static(__dirname));
+
 app.get('/index', (req, res) => {
   console.log('GET request to /');
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
 app.get('/about', (req, res) => {
   console.log('GET request to /about');
   res.sendFile(path.join(__dirname, 'about.html'));
 });
+
 app.get('/services', (req, res) => {
   console.log('GET request to /services');
   res.sendFile(path.join(__dirname, 'services.html'));
 });
+
 app.get('/upload', (req, res) => {
   console.log('GET request to /upload');
   res.sendFile(path.join(__dirname, 'upload.html'));
@@ -145,8 +151,7 @@ app.post('/api/admin-auth', (req, res) => {
 app.get('/api/services', async (req, res) => {
   console.log('GET request to /api/services');
   try {
-    const servicesPath = path.join(DATA_DIR, 'services.json');
-    const servicesData = await fs.readFile(servicesPath, 'utf-8');
+    const servicesData = await fs.readFile(SERVICES_FILE, 'utf-8');
     res.setHeader('Cache-Control', 'no-store');
     res.json(JSON.parse(servicesData));
   } catch (err) {
@@ -177,8 +182,7 @@ app.post(
     }
 
     try {
-      const servicesPath = path.join(DATA_DIR, 'services.json');
-      const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8') || '{}');
+      const servicesData = JSON.parse(await fs.readFile(SERVICES_FILE, 'utf-8'));
       servicesData.services.push({
         id: Date.now().toString(),
         name,
@@ -186,7 +190,7 @@ app.post(
         images,
         coverPhoto: coverPhoto ? `/images/${coverPhoto}` : images[0],
       });
-      await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
+      await fs.writeFile(SERVICES_FILE, JSON.stringify(servicesData, null, 2));
       res.json({ success: true, message: 'Service added successfully!' });
     } catch (err) {
       console.error('Error saving new service:', err);
@@ -200,17 +204,15 @@ app.delete('/api/admin/delete-service/:id', async (req, res) => {
   const { id } = req.params;
   console.log('DELETE request to /api/admin/delete-service with ID:', id);
 
-  const servicesPath = path.join(DATA_DIR, 'services.json');
   try {
-    const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
-
+    const servicesData = JSON.parse(await fs.readFile(SERVICES_FILE, 'utf-8'));
     const updatedServices = servicesData.services.filter((service) => service.id !== id);
 
     if (updatedServices.length === servicesData.services.length) {
       return res.status(404).json({ error: 'Service not found.' });
     }
 
-    await fs.writeFile(servicesPath, JSON.stringify({ services: updatedServices }, null, 2));
+    await fs.writeFile(SERVICES_FILE, JSON.stringify({ services: updatedServices }, null, 2));
     res.json({ success: true, message: 'Service deleted successfully!' });
   } catch (err) {
     console.error('Error deleting service:', err);
@@ -226,9 +228,8 @@ app.put('/api/admin/update-service/:id', upload.array('images', 40), async (req,
 
   console.log('PUT request to /api/admin/update-service with ID:', id);
 
-  const servicesPath = path.join(DATA_DIR, 'services.json');
   try {
-    const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
+    const servicesData = JSON.parse(await fs.readFile(SERVICES_FILE, 'utf-8'));
     const serviceIndex = servicesData.services.findIndex((service) => service.id === id);
 
     if (serviceIndex === -1) {
@@ -241,7 +242,7 @@ app.put('/api/admin/update-service/:id', upload.array('images', 40), async (req,
     if (images.length > 0) service.images = service.images.concat(images);
     if (coverPhoto) service.coverPhoto = `/images/${coverPhoto}`;
 
-    await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
+    await fs.writeFile(SERVICES_FILE, JSON.stringify(servicesData, null, 2));
     res.json({ success: true, message: 'Service updated successfully!', service });
   } catch (err) {
     console.error('Error updating service:', err);
@@ -249,45 +250,7 @@ app.put('/api/admin/update-service/:id', upload.array('images', 40), async (req,
   }
 });
 
-// Delete an image from the service
-app.delete('/api/admin/delete-image', async (req, res) => {
-  const { serviceId, imagePath } = req.body;
-  const servicesPath = path.join(DATA_DIR, 'services.json');
-  
-  try {
-    const servicesData = JSON.parse(await fs.readFile(servicesPath, 'utf-8'));
-    const service = servicesData.services.find((s) => s.id === serviceId);
-
-    if (!service) {
-      return res.status(404).json({ error: 'Service not found' });
-    }
-
-    service.images = service.images.filter((img) => img !== imagePath);
-
-    const imageFilePath = path.join(__dirname, imagePath);
-    await fs.unlink(imageFilePath);
-
-    await fs.writeFile(servicesPath, JSON.stringify(servicesData, null, 2));
-
-    res.json({ success: true, message: 'Image deleted successfully!' });
-  } catch (err) {
-    console.error('Error deleting image:', err);
-    res.status(500).json({ error: 'Failed to delete image.' });
-  }
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error(`Error on ${req.method} ${req.url}:`, err.stack);
-  res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
-});
-
-// Catch-all for unmatched routes
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not Found' });
-});
-
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server running on dynamic port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
