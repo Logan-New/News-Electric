@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let imagesToDelete = [];
   const BACKEND_URL = 'https://news-electric.onrender.com';
 
+  // Show feedback in the UI (success or error messages)
   const showFeedback = (message, isSuccess = true) => {
     if (feedbackMessage && feedbackSection) {
       feedbackMessage.textContent = message;
@@ -23,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  // Function to make fetch requests to the server
   const fetchData = async (url, options = {}) => {
     try {
       const response = await fetch(`${BACKEND_URL}${url}`, options);
@@ -34,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  // Admin authentication
   if (adminLink) {
     adminLink.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -117,6 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const showModal = setupModal();
 
+  // Load services from the server
   const loadServices = async () => {
     try {
       const data = await fetchData('/api/services', { cache: 'no-store' });
@@ -162,6 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  // Populate the service form with the selected service's data
   const populateServiceForm = async (id) => {
     const nameInput = document.getElementById('name');
     const descriptionInput = document.getElementById('description');
@@ -232,6 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Image file selection for form
   if (imageInput) {
     imageInput.addEventListener('change', (e) => {
       const files = e.target.files;
@@ -271,6 +277,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Submit the form
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -303,6 +310,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Delete service
   if (deleteServiceButton) {
     deleteServiceButton.addEventListener('click', async () => {
       const id = serviceSelect.value;
@@ -324,6 +332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Return to home
   if (returnHomeButton) {
     returnHomeButton.addEventListener('click', (e) => {
       e.preventDefault();
