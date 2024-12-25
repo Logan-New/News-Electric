@@ -5,13 +5,19 @@ body, h1, h2, h3, p, ul, ol, a, input, button, textarea, select {
   box-sizing: border-box;
 }
 
-body {
+html, body {
   font-family: 'Cinzel', serif; /* Classic font style */
   font-size: 16px;
   line-height: 1.6;
   color: #002244; /* Navy Blue for text color */
   background-color: #F9F9F9; /* Light gray background for contrast */
-  margin: 0;
+  height: 100%; /* Ensure the body takes full height */
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Full viewport height */
 }
 
 /* Header */
@@ -60,6 +66,14 @@ nav a:focus {
   outline: none;
 }
 
+/* Main Content */
+main {
+  flex: 1; /* Pushes the footer to the bottom */
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 /* Footer */
 footer {
   background: #002244; /* Navy Blue */
@@ -67,7 +81,7 @@ footer {
   padding: 20px;
   text-align: center;
   font-size: 0.9rem;
-  margin-top: 40px;
+  margin-top: auto; /* Keeps footer at the bottom */
 }
 
 footer a {
@@ -81,13 +95,6 @@ footer a:hover,
 footer a:focus {
   color: #FFFFFF; /* White text on hover */
   text-decoration: underline;
-}
-
-/* Main Content */
-main {
-  padding: 40px;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
 /* Service Items */
@@ -226,6 +233,7 @@ form button:hover {
     font-size: 0.9rem;
   }
 }
+
 .modal {
   position: fixed;
   top: 0;
