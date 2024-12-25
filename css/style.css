@@ -296,14 +296,14 @@ form button:hover {
 }
 
 #top-right-image {
-  width: 50px;  /* Adjust the size */
+  width: 300px;  /* Adjust the size */
   height: auto;
   border: 2px solid #ccc; /* Optional border */
 }
 
 /* Business card image in the footer */
 #business-card {
-  width: 100px;  /* Adjust the size of the business card */
+  width: 200px;  /* Adjust the size of the business card */
   height: auto;
   margin-top: 10px;
   border: 2px solid #ccc; /* Optional border */
