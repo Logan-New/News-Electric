@@ -287,3 +287,24 @@ form button:hover {
     text-align: center;
   }
 }
+/* Top-right image on every page */
+#top-right-image-container {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+}
+
+#top-right-image {
+  width: 50px;  /* Adjust the size */
+  height: auto;
+  border: 2px solid #ccc; /* Optional border */
+}
+
+/* Business card image in the footer */
+#business-card {
+  width: 100px;  /* Adjust the size of the business card */
+  height: auto;
+  margin-top: 10px;
+  border: 2px solid #ccc; /* Optional border */
+}
